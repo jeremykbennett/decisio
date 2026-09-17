@@ -27,10 +27,10 @@
 
 ## Test Application URL
 
-**Live Application:** https://campaign-decisions.preview.emergentagent.com
+**Live Application:** https://c3ed9c44-c8d7-4d2c-8dad-f2af3c2143c4.preview.emergentagent.com
 
-- Login Page: https://campaign-decisions.preview.emergentagent.com/login
-- Dashboard: https://campaign-decisions.preview.emergentagent.com/dashboard
+- Login Page: https://c3ed9c44-c8d7-4d2c-8dad-f2af3c2143c4.preview.emergentagent.com/login
+- Dashboard: https://c3ed9c44-c8d7-4d2c-8dad-f2af3c2143c4.preview.emergentagent.com/dashboard
 
 ---
 
@@ -56,8 +56,8 @@
 
 ## Quick Test Guide
 
-1. **Login:** Go to https://campaign-decisions.preview.emergentagent.com/login
-2. **Use Superuser account** for full access: super@test.com / super123
+1. **Login:** Go to https://c3ed9c44-c8d7-4d2c-8dad-f2af3c2143c4.preview.emergentagent.com/login
+2. **Use Superuser account** for full access: super@test.com / newpass123
 3. **View Client Details:** Click on any client to see the redesigned layout with:
    - 4-box first row (Client Info, Account Details, Email Status, Direct Mail)
    - Field names and values on the same line

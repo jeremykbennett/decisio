@@ -3,7 +3,7 @@ import time
 
 # Create a client manager via API for testing
 def create_client_manager_for_testing():
-    api_url = "https://campaign-decisions.preview.emergentagent.com/api"
+    api_url = "https://choice-maker-43.preview.emergentagent.com/api"
     timestamp = str(int(time.time()))
     
     client_manager_data = {
