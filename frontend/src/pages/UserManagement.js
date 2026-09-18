@@ -7,7 +7,8 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Shield, Trash2, Plus } from 'lucide-react';
+import { Textarea } from '../components/ui/textarea';
+import { Shield, Trash2, Plus, UserPlus, Copy, Check, CheckCircle2, XCircle, MinusCircle } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -51,6 +52,12 @@ export default function UserManagement() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [newUser, setNewUser] = useState({ email: '', password: '', full_name: '', role: 'marketer' });
   const [creating, setCreating] = useState(false);
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
+  const [inviteEmails, setInviteEmails] = useState('');
+  const [inviteRole, setInviteRole] = useState('marketer');
+  const [inviting, setInviting] = useState(false);
+  const [inviteResults, setInviteResults] = useState(null);
+  const [copied, setCopied] = useState('');
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
 
   useEffect(() => {
@@ -119,6 +126,58 @@ export default function UserManagement() {
     }
   };
 
+  const parsedInviteEmails = inviteEmails
+    .split(/[\s,;]+/)
+    .map((e) => e.trim())
+    .filter(Boolean);
+
+  const handleBulkInvite = async () => {
+    if (parsedInviteEmails.length === 0) {
+      toast.error('Please enter at least one email');
+      return;
+    }
+    setInviting(true);
+    try {
+      const response = await axios.post(
+        `${API}/users/bulk-invite`,
+        { emails: parsedInviteEmails, role: inviteRole },
+        { headers: getAuthHeaders() }
+      );
+      setInviteResults(response.data);
+      const s = response.data.summary;
+      toast.success(`${s.invited} invited · ${s.skipped} skipped · ${s.invalid + s.duplicate} ignored`);
+      fetchUsers();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to invite users');
+    } finally {
+      setInviting(false);
+    }
+  };
+
+  const resetInviteDialog = () => {
+    setShowInviteDialog(false);
+    setInviteEmails('');
+    setInviteRole('marketer');
+    setInviteResults(null);
+    setCopied('');
+  };
+
+  const copyToClipboard = (text, key) => {
+    navigator.clipboard?.writeText(text);
+    setCopied(key);
+    toast.success('Copied to clipboard');
+    setTimeout(() => setCopied(''), 1500);
+  };
+
+  const copyAllCredentials = () => {
+    if (!inviteResults) return;
+    const lines = inviteResults.results
+      .filter((r) => r.status === 'invited')
+      .map((r) => `${r.email}, ${r.temp_password}`)
+      .join('\n');
+    copyToClipboard(lines, 'all');
+  };
+
   const getRoleBadgeColor = (role) => {
     const colors = {
       superuser: 'bg-purple-50 text-purple-700 ring-1 ring-purple-200',
@@ -146,14 +205,25 @@ export default function UserManagement() {
               Manage user accounts and permissions. Superuser privileges required.
             </p>
           </div>
-          <Button
-            onClick={() => setShowCreateDialog(true)}
-            data-testid="create-user-button"
-            className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl font-semibold shadow-lg shadow-primary/20"
-          >
-            <Plus className="h-4 w-4 mr-2" strokeWidth={1.5} />
-            Create User
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => setShowInviteDialog(true)}
+              data-testid="bulk-invite-button"
+              variant="outline"
+              className="rounded-xl border-primary/30 text-primary hover:bg-primary/5 font-semibold"
+            >
+              <UserPlus className="h-4 w-4 mr-2" strokeWidth={1.75} />
+              Bulk Invite
+            </Button>
+            <Button
+              onClick={() => setShowCreateDialog(true)}
+              data-testid="create-user-button"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl font-semibold shadow-lg shadow-primary/20"
+            >
+              <Plus className="h-4 w-4 mr-2" strokeWidth={1.5} />
+              Create User
+            </Button>
+          </div>
         </div>
 
         <div className="glass-card rounded-2xl overflow-hidden">
@@ -345,6 +415,158 @@ export default function UserManagement() {
               {creating ? 'Creating...' : 'Create User'}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Invite Dialog */}
+      <Dialog open={showInviteDialog} onOpenChange={(open) => (open ? setShowInviteDialog(true) : resetInviteDialog())}>
+        <DialogContent className="rounded-2xl max-w-2xl max-h-[85vh] overflow-y-auto" data-testid="bulk-invite-dialog">
+          <DialogHeader>
+            <DialogTitle>Bulk Invite Users</DialogTitle>
+            <DialogDescription>
+              Paste multiple emails (comma, space, or new line separated). Each new user gets an account with a temporary password to share.
+            </DialogDescription>
+          </DialogHeader>
+
+          {!inviteResults ? (
+            <div className="space-y-4 mt-4">
+              <div className="space-y-2">
+                <Label htmlFor="invite-emails">Emails</Label>
+                <Textarea
+                  id="invite-emails"
+                  data-testid="bulk-invite-emails-input"
+                  value={inviteEmails}
+                  onChange={(e) => setInviteEmails(e.target.value)}
+                  placeholder={"alice@company.com, bob@company.com\ncarol@company.com"}
+                  rows={6}
+                  className="rounded-xl bg-white resize-none"
+                />
+                <p className="text-xs text-muted-foreground">
+                  {parsedInviteEmails.length} email{parsedInviteEmails.length === 1 ? '' : 's'} detected
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="invite-role">Role for all invited users</Label>
+                <Select value={inviteRole} onValueChange={setInviteRole}>
+                  <SelectTrigger className="rounded-xl h-11" data-testid="bulk-invite-role-select">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="administrator">Administrator - Manage clients & campaigns</SelectItem>
+                    <SelectItem value="client_manager">Client Manager - View only</SelectItem>
+                    <SelectItem value="marketer">Marketer - View assigned only</SelectItem>
+                    <SelectItem value="superuser">Superuser - Full access + user management</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <DialogFooter className="mt-2">
+                <Button variant="outline" onClick={resetInviteDialog} className="rounded-xl">Cancel</Button>
+                <Button
+                  onClick={handleBulkInvite}
+                  disabled={inviting || parsedInviteEmails.length === 0}
+                  data-testid="bulk-invite-submit"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl font-semibold shadow-lg shadow-primary/20"
+                >
+                  {inviting ? 'Inviting...' : `Invite ${parsedInviteEmails.length || ''} User${parsedInviteEmails.length === 1 ? '' : 's'}`}
+                </Button>
+              </DialogFooter>
+            </div>
+          ) : (
+            <div className="space-y-4 mt-4" data-testid="bulk-invite-results">
+              <div className="flex flex-wrap gap-2">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">
+                  <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2} /> {inviteResults.summary.invited} invited
+                </span>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600 ring-1 ring-slate-200">
+                  <MinusCircle className="h-3.5 w-3.5" strokeWidth={2} /> {inviteResults.summary.skipped} skipped
+                </span>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-red-50 text-red-700 ring-1 ring-red-200">
+                  <XCircle className="h-3.5 w-3.5" strokeWidth={2} /> {inviteResults.summary.invalid + inviteResults.summary.duplicate} ignored
+                </span>
+              </div>
+
+              {inviteResults.summary.invited > 0 && (
+                <div className="flex justify-end">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={copyAllCredentials}
+                    data-testid="copy-all-credentials"
+                    className="rounded-xl text-xs"
+                  >
+                    {copied === 'all' ? <Check className="h-3.5 w-3.5 mr-1.5" /> : <Copy className="h-3.5 w-3.5 mr-1.5" />}
+                    Copy all credentials
+                  </Button>
+                </div>
+              )}
+
+              <div className="border border-border rounded-xl overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/60 border-b border-border">
+                    <tr>
+                      <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 py-3">Email</th>
+                      <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 py-3">Status</th>
+                      <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 py-3">Temp Password</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {inviteResults.results.map((r, i) => (
+                      <tr key={i} className="border-b border-border/60 last:border-0" data-testid={`invite-result-${r.email}`}>
+                        <td className="px-4 py-3 text-foreground">{r.email}</td>
+                        <td className="px-4 py-3">
+                          {r.status === 'invited' && <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">Invited</span>}
+                          {r.status === 'skipped' && <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 ring-1 ring-slate-200">Already exists</span>}
+                          {r.status === 'invalid' && <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700 ring-1 ring-red-200">Invalid</span>}
+                          {r.status === 'duplicate' && <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 ring-1 ring-amber-200">Duplicate</span>}
+                        </td>
+                        <td className="px-4 py-3">
+                          {r.temp_password ? (
+                            <div className="flex items-center gap-2">
+                              <code className="font-data text-xs bg-muted px-2 py-1 rounded-md">{r.temp_password}</code>
+                              <button
+                                onClick={() => copyToClipboard(r.temp_password, r.email)}
+                                data-testid={`copy-password-${r.email}`}
+                                className="text-muted-foreground hover:text-primary transition-colors"
+                                title="Copy password"
+                              >
+                                {copied === r.email ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <p className="text-xs text-muted-foreground">
+                Share each temporary password with the user. They can sign in immediately and should change it afterwards.
+              </p>
+
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => { setInviteResults(null); setInviteEmails(''); }}
+                  data-testid="invite-more-button"
+                  className="rounded-xl"
+                >
+                  Invite More
+                </Button>
+                <Button
+                  onClick={resetInviteDialog}
+                  data-testid="invite-done-button"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl font-semibold shadow-lg shadow-primary/20"
+                >
+                  Done
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </Layout>

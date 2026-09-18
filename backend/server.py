@@ -9,6 +9,8 @@ from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from typing import List, Optional
 import uuid
+import secrets
+import re
 from datetime import datetime, timezone, timedelta
 import jwt
 from passlib.context import CryptContext
@@ -49,6 +51,10 @@ class PasswordResetRequest(BaseModel):
 class PasswordReset(BaseModel):
     token: str
     new_password: str
+
+class BulkInviteRequest(BaseModel):
+    emails: List[str]
+    role: str = "marketer"
 
 class User(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -377,6 +383,58 @@ async def create_user(user_data: UserCreate, current_user: User = Depends(get_cu
     
     await db.users.insert_one(doc)
     return user
+
+ALLOWED_INVITE_ROLES = {"administrator", "client_manager", "marketer", "superuser"}
+EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+def _generate_temp_password() -> str:
+    # 12-char URL-safe temporary password
+    return secrets.token_urlsafe(9)
+
+@api_router.post("/users/bulk-invite")
+async def bulk_invite_users(payload: BulkInviteRequest, current_user: User = Depends(get_current_user)):
+    if not is_superuser(current_user):
+        raise HTTPException(status_code=403, detail="Only superusers can invite users")
+
+    role = payload.role if payload.role in ALLOWED_INVITE_ROLES else "marketer"
+
+    results = []
+    seen = set()
+    for raw in payload.emails:
+        email = (raw or "").strip().lower()
+        if not email:
+            continue
+        if email in seen:
+            results.append({"email": email, "status": "duplicate", "temp_password": None, "reason": "Duplicate in list"})
+            continue
+        seen.add(email)
+
+        if not EMAIL_RE.match(email):
+            results.append({"email": email, "status": "invalid", "temp_password": None, "reason": "Invalid email format"})
+            continue
+
+        existing = await db.users.find_one({"email": email})
+        if existing:
+            results.append({"email": email, "status": "skipped", "temp_password": None, "reason": "Already registered"})
+            continue
+
+        temp_password = _generate_temp_password()
+        full_name = email.split("@")[0].replace(".", " ").replace("_", " ").title()
+        user = User(email=email, full_name=full_name, role=role)
+        doc = user.model_dump()
+        doc["password"] = get_password_hash(temp_password)
+        doc["created_at"] = doc["created_at"].isoformat()
+        await db.users.insert_one(doc)
+        results.append({"email": email, "status": "invited", "temp_password": temp_password, "reason": None})
+
+    summary = {
+        "invited": sum(1 for r in results if r["status"] == "invited"),
+        "skipped": sum(1 for r in results if r["status"] == "skipped"),
+        "invalid": sum(1 for r in results if r["status"] == "invalid"),
+        "duplicate": sum(1 for r in results if r["status"] == "duplicate"),
+        "total": len(results),
+    }
+    return {"role": role, "summary": summary, "results": results}
 
 @api_router.put("/users/{user_id}", response_model=User)
 async def update_user_role(
@@ -733,7 +791,6 @@ async def create_custom_field(
         raise HTTPException(status_code=403, detail="Only administrators and superusers can create custom fields")
     
     # Validate field_name (no spaces, lowercase, alphanumeric + underscore)
-    import re
     if not re.match(r'^[a-z0-9_]+$', field_name):
         raise HTTPException(status_code=400, detail="Field name must be lowercase alphanumeric with underscores only")
     
