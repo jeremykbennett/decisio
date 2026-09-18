@@ -153,14 +153,14 @@ export default function ClientForm() {
           variant="ghost"
           onClick={() => navigate('/dashboard')}
           data-testid="back-button"
-          className="mb-6 rounded-none hover:bg-muted"
+          className="mb-6 rounded-xl hover:bg-muted -ml-3"
         >
-          <ArrowLeft className="h-4 w-4 mr-2" strokeWidth={1.5} />
+          <ArrowLeft className="h-4 w-4 mr-2" strokeWidth={1.75} />
           Back to Dashboard
         </Button>
 
-        <div className="bg-white border border-border rounded-none p-8">
-          <h2 className="text-2xl font-semibold tracking-tight mb-6">
+        <div className="glass-card rounded-2xl p-8 animate-rise">
+          <h2 className="font-display text-2xl font-bold tracking-tight mb-6 text-foreground">
             {isEdit ? 'Edit Client' : 'Add New Client'}
           </h2>
 
@@ -176,7 +176,7 @@ export default function ClientForm() {
                   onChange={(e) => setFormData({ ...formData, policy_id: e.target.value })}
                   data-testid="policy-id-input"
                   required
-                  className="rounded-none border border-input"
+                  className="rounded-xl h-11 bg-white border border-input"
                 />
               </div>
 
@@ -190,7 +190,7 @@ export default function ClientForm() {
                   onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
                   data-testid="client-name-input"
                   required
-                  className="rounded-none border border-input"
+                  className="rounded-xl h-11 bg-white border border-input"
                 />
               </div>
 
@@ -203,7 +203,7 @@ export default function ClientForm() {
                   onValueChange={(value) => setFormData({ ...formData, platform: value })}
                   required
                 >
-                  <SelectTrigger data-testid="platform-select" className="rounded-none">
+                  <SelectTrigger data-testid="platform-select" className="rounded-xl h-11 bg-white">
                     <SelectValue placeholder="Select platform" />
                   </SelectTrigger>
                   <SelectContent>
@@ -223,7 +223,7 @@ export default function ClientForm() {
                   onValueChange={(value) => setFormData({ ...formData, account_type: value })}
                   required
                 >
-                  <SelectTrigger data-testid="account-type-select" className="rounded-none">
+                  <SelectTrigger data-testid="account-type-select" className="rounded-xl h-11 bg-white">
                     <SelectValue placeholder="Select account type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -243,7 +243,7 @@ export default function ClientForm() {
                   onValueChange={(value) => setFormData({ ...formData, plan: value })}
                   required
                 >
-                  <SelectTrigger data-testid="plan-select" className="rounded-none">
+                  <SelectTrigger data-testid="plan-select" className="rounded-xl h-11 bg-white">
                     <SelectValue placeholder="Select plan" />
                   </SelectTrigger>
                   <SelectContent>
@@ -263,7 +263,7 @@ export default function ClientForm() {
                   onValueChange={(value) => setFormData({ ...formData, client_status: value })}
                   required
                 >
-                  <SelectTrigger data-testid="client-status-select" className="rounded-none">
+                  <SelectTrigger data-testid="client-status-select" className="rounded-xl h-11 bg-white">
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -283,7 +283,7 @@ export default function ClientForm() {
                   onValueChange={(value) => setFormData({ ...formData, engagement_solutions_client: value })}
                   required
                 >
-                  <SelectTrigger data-testid="engagement-solutions-select" className="rounded-none">
+                  <SelectTrigger data-testid="engagement-solutions-select" className="rounded-xl h-11 bg-white">
                     <SelectValue placeholder="Select" />
                   </SelectTrigger>
                   <SelectContent>
@@ -297,7 +297,7 @@ export default function ClientForm() {
 
             {/* Global Status Fields */}
             <div className="border-t border-border pt-6 mt-6">
-              <h3 className="text-lg font-medium tracking-tight mb-4">Global Communication Status</h3>
+              <h3 className="font-display text-lg font-semibold tracking-tight mb-4">Global Communication Status</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label className="text-xs uppercase tracking-wider font-medium">
@@ -308,7 +308,7 @@ export default function ClientForm() {
                     onValueChange={(value) => setFormData({ ...formData, global_status_email: value })}
                     required
                   >
-                    <SelectTrigger data-testid="global-status-email-select" className="rounded-none">
+                    <SelectTrigger data-testid="global-status-email-select" className="rounded-xl h-11 bg-white">
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -328,7 +328,7 @@ export default function ClientForm() {
                     onValueChange={(value) => setFormData({ ...formData, global_status_direct_mail: value })}
                     required
                   >
-                    <SelectTrigger data-testid="global-status-mail-select" className="rounded-none">
+                    <SelectTrigger data-testid="global-status-mail-select" className="rounded-xl h-11 bg-white">
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -348,7 +348,7 @@ export default function ClientForm() {
                     onValueChange={(value) => setFormData({ ...formData, global_status_phone: value })}
                     required
                   >
-                    <SelectTrigger data-testid="global-status-phone-select" className="rounded-none">
+                    <SelectTrigger data-testid="global-status-phone-select" className="rounded-xl h-11 bg-white">
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -368,7 +368,7 @@ export default function ClientForm() {
                     onValueChange={(value) => setFormData({ ...formData, global_status_direct_sms: value })}
                     required
                   >
-                    <SelectTrigger data-testid="global-status-sms-select" className="rounded-none">
+                    <SelectTrigger data-testid="global-status-sms-select" className="rounded-xl h-11 bg-white">
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -384,7 +384,7 @@ export default function ClientForm() {
             {/* Custom Fields */}
             {customFields.length > 0 && (
               <div className="border-t border-border pt-6 mt-6">
-                <h3 className="text-lg font-medium tracking-tight mb-4">Custom Fields</h3>
+                <h3 className="font-display text-lg font-semibold tracking-tight mb-4">Custom Fields</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {customFields.map((field) => (
                     <div key={field.field_name} className="space-y-2">
@@ -398,7 +398,7 @@ export default function ClientForm() {
                           custom_fields: { ...formData.custom_fields, [field.field_name]: value }
                         })}
                       >
-                        <SelectTrigger data-testid={`custom-${field.field_name}-select`} className="rounded-none">
+                        <SelectTrigger data-testid={`custom-${field.field_name}-select`} className="rounded-xl h-11 bg-white">
                           <SelectValue placeholder={`Select ${field.display_label.toLowerCase()}`} />
                         </SelectTrigger>
                         <SelectContent>
@@ -423,9 +423,9 @@ export default function ClientForm() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 data-testid="manager-search-input"
-                className="mb-4 rounded-none border border-input"
+                className="mb-4 rounded-xl h-11 bg-white border border-input"
               />
-              <div className="space-y-2 max-h-48 overflow-y-auto border border-border rounded-none p-4">
+              <div className="space-y-2 max-h-48 overflow-y-auto border border-border rounded-xl p-4 bg-white/60">
                 {loadingUsers ? (
                   <p className="text-sm text-muted-foreground">Loading users...</p>
                 ) : users.length === 0 ? (
@@ -460,7 +460,7 @@ export default function ClientForm() {
                 variant="outline"
                 onClick={() => navigate('/dashboard')}
                 data-testid="cancel-button"
-                className="rounded-none border border-input"
+                className="rounded-xl border border-input"
               >
                 Cancel
               </Button>
@@ -468,7 +468,7 @@ export default function ClientForm() {
                 type="submit"
                 disabled={loading || formData.client_managers.length === 0}
                 data-testid="submit-button"
-                className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-none px-6"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-6 font-semibold shadow-lg shadow-primary/20"
               >
                 {loading ? 'Saving...' : isEdit ? 'Update Client' : 'Create Client'}
               </Button>
