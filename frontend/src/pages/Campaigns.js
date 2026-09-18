@@ -6,7 +6,15 @@ import { toast } from 'sonner';
 import Layout from '../components/Layout';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { Search, Eye, Edit, Trash2, Calendar, Plus, Package } from 'lucide-react';
+import { Search, Eye, Edit, Trash2, Calendar, Plus, Package, Download } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '../components/ui/dropdown-menu';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -58,6 +66,27 @@ export default function Campaigns() {
       fetchCampaigns();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to delete campaign');
+    }
+  };
+
+  const exportDecisions = async (campaignId, name, type) => {
+    try {
+      const res = await axios.get(`${API}/campaigns/${campaignId}/export/${type}`, {
+        headers: getAuthHeaders(),
+        responseType: 'blob'
+      });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const a = document.createElement('a');
+      a.href = url;
+      const safe = (name || 'campaign').replace(/[^a-z0-9\-_ ]/gi, '').trim().replace(/\s+/g, '_');
+      a.download = `${safe}_${type}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success('Export downloaded');
+    } catch (error) {
+      toast.error('Failed to export decisions');
     }
   };
 
@@ -184,6 +213,41 @@ export default function Campaigns() {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-1">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                data-testid={`export-campaign-${campaign.id}`}
+                                className="rounded-lg hover:bg-primary/10 hover:text-primary"
+                                title="Export decisions"
+                              >
+                                <Download className="h-4 w-4" strokeWidth={1.5} />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="rounded-xl">
+                              <DropdownMenuLabel>Export decisions</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                data-testid={`export-optin-${campaign.id}`}
+                                onClick={() => exportDecisions(campaign.id, campaign.campaign_name, 'opt_in')}
+                              >
+                                Opt-ins only
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                data-testid={`export-optout-${campaign.id}`}
+                                onClick={() => exportDecisions(campaign.id, campaign.campaign_name, 'opt_out')}
+                              >
+                                Opt-outs only
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                data-testid={`export-both-${campaign.id}`}
+                                onClick={() => exportDecisions(campaign.id, campaign.campaign_name, 'both')}
+                              >
+                                Opt-ins &amp; Opt-outs
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                           <Button
                             variant="ghost"
                             size="sm"

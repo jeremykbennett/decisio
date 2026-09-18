@@ -119,7 +119,7 @@ export default function Register() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="marketer">Marketer</SelectItem>
+                <SelectItem value="marketer">Campaign Manager</SelectItem>
                 <SelectItem value="client_manager">Client Manager</SelectItem>
                 <SelectItem value="administrator">Administrator</SelectItem>
                 <SelectItem value="superuser">Superuser</SelectItem>

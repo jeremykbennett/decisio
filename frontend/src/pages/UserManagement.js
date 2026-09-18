@@ -35,14 +35,14 @@ const ROLE_LABELS = {
   superuser: 'Superuser',
   administrator: 'Administrator',
   client_manager: 'Client Manager',
-  marketer: 'Marketer'
+  marketer: 'Campaign Manager'
 };
 
 const ROLE_DESCRIPTIONS = {
   superuser: 'Full access + user management',
   administrator: 'Manage clients, campaigns, settings',
-  client_manager: 'View all clients (read-only)',
-  marketer: 'View assigned clients only'
+  client_manager: 'Assigned to clients; sets opt-in/opt-out',
+  marketer: 'Assigned to campaigns; view-only'
 };
 
 export default function UserManagement() {
@@ -282,7 +282,7 @@ export default function UserManagement() {
                               <SelectItem value="superuser">Superuser</SelectItem>
                               <SelectItem value="administrator">Administrator</SelectItem>
                               <SelectItem value="client_manager">Client Manager</SelectItem>
-                              <SelectItem value="marketer">Marketer</SelectItem>
+                              <SelectItem value="marketer">Campaign Manager</SelectItem>
                             </SelectContent>
                           </Select>
                         ) : (
@@ -392,8 +392,8 @@ export default function UserManagement() {
                 <SelectContent>
                   <SelectItem value="superuser">Superuser - Full access + user management</SelectItem>
                   <SelectItem value="administrator">Administrator - Manage clients & campaigns</SelectItem>
-                  <SelectItem value="client_manager">Client Manager - View only</SelectItem>
-                  <SelectItem value="marketer">Marketer - View assigned only</SelectItem>
+                  <SelectItem value="client_manager">Client Manager - Assigned to clients</SelectItem>
+                  <SelectItem value="marketer">Campaign Manager - Assigned to campaigns</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -454,8 +454,8 @@ export default function UserManagement() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="administrator">Administrator - Manage clients & campaigns</SelectItem>
-                    <SelectItem value="client_manager">Client Manager - View only</SelectItem>
-                    <SelectItem value="marketer">Marketer - View assigned only</SelectItem>
+                    <SelectItem value="client_manager">Client Manager - Assigned to clients</SelectItem>
+                    <SelectItem value="marketer">Campaign Manager - Assigned to campaigns</SelectItem>
                     <SelectItem value="superuser">Superuser - Full access + user management</SelectItem>
                   </SelectContent>
                 </Select>

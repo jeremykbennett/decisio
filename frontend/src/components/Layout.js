@@ -118,7 +118,7 @@ export const Layout = ({ children, pageTitle }) => {
               className={navItemClass(isActive('/campaigns'))}
             >
               <Calendar className="h-5 w-5" strokeWidth={1.75} />
-              Campaigns
+              Campaign Manager
             </button>
           )}
 
@@ -164,7 +164,7 @@ export const Layout = ({ children, pageTitle }) => {
             </div>
             <div className="min-w-0">
               <p className="text-sm font-medium text-white truncate">{user.full_name}</p>
-              <p className="text-[10px] text-white/40 uppercase tracking-wider mt-0.5">{user.role?.replace('_', ' ')}</p>
+              <p className="text-[10px] text-white/40 uppercase tracking-wider mt-0.5">{(user.role === 'marketer' ? 'campaign manager' : user.role?.replace('_', ' '))}</p>
             </div>
           </div>
           <Button

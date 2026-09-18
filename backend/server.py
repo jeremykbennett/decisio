@@ -1,5 +1,6 @@
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.responses import StreamingResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -14,6 +15,8 @@ import re
 from datetime import datetime, timezone, timedelta
 import jwt
 from passlib.context import CryptContext
+import io
+from openpyxl import Workbook
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -972,6 +975,65 @@ async def get_campaign_uptake(campaign_id: str, current_user: User = Depends(get
         "opt_out": opt_out,
         "not_elected": not_elected,
     }
+
+@api_router.get("/campaigns/{campaign_id}/export/{decision_type}")
+async def export_campaign_decisions(campaign_id: str, decision_type: str, current_user: User = Depends(get_current_user)):
+    """Download an Excel export of a campaign's decisions.
+    decision_type: opt_in | opt_out | both
+    """
+    if decision_type not in {"opt_in", "opt_out", "both"}:
+        raise HTTPException(status_code=400, detail="Invalid export type")
+
+    campaign = await db.campaigns.find_one({"id": campaign_id}, {"_id": 0})
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    wanted = {"opt_in", "opt_out"} if decision_type == "both" else {decision_type}
+    elections = await db.elections.find(
+        {"campaign_id": campaign_id, "decision": {"$in": list(wanted)}}, {"_id": 0}
+    ).to_list(100000)
+
+    # Build lookup maps for client and user names
+    clients = await db.clients.find({}, {"_id": 0, "id": 1, "client_name": 1, "policy_id": 1, "platform": 1}).to_list(100000)
+    client_map = {c["id"]: c for c in clients}
+    users = await db.users.find({}, {"_id": 0, "id": 1, "full_name": 1}).to_list(100000)
+    user_map = {u["id"]: u.get("full_name", "") for u in users}
+
+    decision_labels = {"opt_in": "Opt-in", "opt_out": "Opt-out"}
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Decisions"
+    ws.append(["Client Name", "Policy ID", "Platform", "Decision", "Updated By", "Updated At"])
+
+    # Sort by client name for readability
+    def sort_key(e):
+        c = client_map.get(e.get("client_id"), {})
+        return (c.get("client_name") or "").lower()
+
+    for e in sorted(elections, key=sort_key):
+        c = client_map.get(e.get("client_id"), {})
+        ws.append([
+            c.get("client_name", "Unknown"),
+            c.get("policy_id", ""),
+            c.get("platform", ""),
+            decision_labels.get(e.get("decision"), e.get("decision")),
+            user_map.get(e.get("updated_by"), ""),
+            e.get("updated_at", ""),
+        ])
+
+    stream = io.BytesIO()
+    wb.save(stream)
+    stream.seek(0)
+
+    safe_name = "".join(ch for ch in campaign.get("campaign_name", "campaign") if ch.isalnum() or ch in (" ", "-", "_")).strip().replace(" ", "_")
+    filename = f"{safe_name}_{decision_type}.xlsx"
+
+    return StreamingResponse(
+        stream,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
 
 @api_router.put("/campaigns/{campaign_id}", response_model=Campaign)
 async def update_campaign(

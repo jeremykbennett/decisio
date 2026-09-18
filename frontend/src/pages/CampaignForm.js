@@ -9,7 +9,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Checkbox } from '../components/ui/checkbox';
-import { ArrowLeft, CheckCircle2, XCircle, MinusCircle, Users } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, XCircle, MinusCircle, Users, Download } from 'lucide-react';
 
 const BACKEND_URL = (typeof window !== 'undefined' && window.location && window.location.origin) ? window.location.origin : process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -142,6 +142,27 @@ export default function CampaignForm() {
     }));
   };
 
+  const exportDecisions = async (type) => {
+    try {
+      const res = await axios.get(`${API}/campaigns/${id}/export/${type}`, {
+        headers: getAuthHeaders(),
+        responseType: 'blob'
+      });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const a = document.createElement('a');
+      a.href = url;
+      const safe = (formData.campaign_name || 'campaign').replace(/[^a-z0-9\-_ ]/gi, '').trim().replace(/\s+/g, '_');
+      a.download = `${safe}_${type}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success('Export downloaded');
+    } catch (error) {
+      toast.error('Failed to export decisions');
+    }
+  };
+
   const uptakeCards = uptake ? [
     { label: 'Opted In', value: uptake.opt_in, icon: CheckCircle2, tint: 'bg-emerald-50 text-emerald-600' },
     { label: 'Opted Out', value: uptake.opt_out, icon: XCircle, tint: 'bg-red-50 text-red-600' },
@@ -164,7 +185,24 @@ export default function CampaignForm() {
 
         {isEdit && uptake && (
           <div className="glass-card rounded-2xl p-6 mb-6 animate-rise" data-testid="campaign-uptake">
-            <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-4">Client Uptake</p>
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Client Uptake</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs text-muted-foreground mr-1">Export:</span>
+                <Button type="button" variant="outline" size="sm" data-testid="export-optin-detail"
+                  onClick={() => exportDecisions('opt_in')} className="rounded-xl text-xs">
+                  <Download className="h-3.5 w-3.5 mr-1.5" /> Opt-ins
+                </Button>
+                <Button type="button" variant="outline" size="sm" data-testid="export-optout-detail"
+                  onClick={() => exportDecisions('opt_out')} className="rounded-xl text-xs">
+                  <Download className="h-3.5 w-3.5 mr-1.5" /> Opt-outs
+                </Button>
+                <Button type="button" variant="outline" size="sm" data-testid="export-both-detail"
+                  onClick={() => exportDecisions('both')} className="rounded-xl text-xs">
+                  <Download className="h-3.5 w-3.5 mr-1.5" /> Both
+                </Button>
+              </div>
+            </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {uptakeCards.map(({ label, value, icon: Icon, tint }) => (
                 <div key={label} className="flex items-center justify-between rounded-xl border border-border p-4" data-testid={`uptake-${label.toLowerCase().replace(/\s/g, '-')}`}>
