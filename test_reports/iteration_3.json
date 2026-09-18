@@ -1,0 +1,19 @@
+{
+  "summary": "Verified frontend login flow after backend URL fix. Superuser (super@test.com/newpass123) and Administrator (admin@test.com/admin123) both log in successfully and land on /clients with stat cards (Total 3, Active 2, Inactive 1, Platforms 2) and client table rendered. Invalid credentials keep user on /login and show 'Login successful' toast area with error state (401 observed in console as expected). Sidebar nav-dashboard navigates to /dashboard, nav-clients navigates to /clients. No requests to old choice-maker-43 URL detected in network/console. Only harmless cdn-cgi/rum aborts and expected 401 for invalid creds.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped)", "frontend": "100%"},
+  "test_credentials": "super@test.com/newpass123, admin@test.com/admin123",
+  "seed_data_creation": "None (used seeded 3 clients).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "REACT_APP_BACKEND_URL correctly points to c3ed9c44 preview. Login, invalid-cred error, and sidebar nav (Dashboard/Clients) verified for both superuser and administrator."
+}
