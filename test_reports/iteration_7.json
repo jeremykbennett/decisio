@@ -1,0 +1,25 @@
+{
+  "summary": "Verified the Campaigns-are-global + per-client Elections refactor end-to-end. Backend: 16/16 pytest tests pass in /app/backend/tests/test_campaigns_elections.py covering (a) admin creates global campaign with no client_id + newly created campaign auto-appears in every client's elections at 'not_elected', (b) marketer cannot create campaigns, (c) admin set/get election for all three decisions with GET persistence, (d) invalid decision returns 400, (e) election change appears in client activity timeline (entity_type='election'), (f) marketer 403 on PUT election / GET /clients / GET /clients/:id, (g) client_manager 403 when not assigned; 200 + can_edit=true when assigned, (h) uptake summary returns opt_in/opt_out/not_elected/total_clients reflecting real state, (i) marketer GET /campaigns default scope=mine only returns campaigns with them in marketing_contacts and scope=all returns >= mine, (j) client_manager scope=mine/all filtering. Frontend E2E via Playwright: admin sees new-campaign-button on /campaigns, table headers are Campaign Name/Channel/Election Period/Products/Actions (NO client column), /campaigns/new has NO client picker and shows submit-button; ClientDetail shows elections-section with 3-way election-<id>-not_elected|opt_in|opt_out controls, clicking Opt-in persists after reload (bg-emerald active state), activity mentions 'election'; Campaign detail shows campaign-uptake with counts Opted In 1 / Opted Out 1 / Not Elected 1 / Total Clients 3. Marketer login lands on /campaigns, sidebar has ONLY nav-campaigns (no dashboard/clients/settings), no new-campaign-button, campaign-scope-toggle with scope-mine/scope-all present; opening a campaign shows all 13 inputs disabled and no submit-button. Client Manager login lands on /clients with nav-dashboard + nav-clients only (no nav-campaigns), client-scope-toggle present with client-scope-mine/all; on a not-assigned client (via All Clients) a 'READ-ONLY' badge is shown next to the Campaign Opt-in / Opt-out section and the election buttons are disabled.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_campaigns_elections.py",
+    "/app/test_reports/pytest/campaigns_elections.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py is 1147 lines and mixes auth, users, clients, campaigns, elections, activity, and CORS setup. Consider splitting into routers (routers/clients.py, routers/campaigns.py, routers/elections.py) to stay <700 lines/file and ease maintenance.",
+    "CORSMiddleware is added AFTER app.include_router(api_router). While Starlette applies middleware to all routes regardless of registration order, convention is to add middleware before including routers to avoid confusion.",
+    "CORS_ORIGINS falls back to '*' with allow_credentials=True — browsers reject wildcard with credentials. Set explicit origins in production or the auth cookie flow will silently fail cross-origin.",
+    "Election buttons use custom `bg-emerald-500` selected state but do not set aria-pressed / role='radiogroup'. Consider ARIA attributes on the 3-way control for a11y.",
+    "get_client_elections builds decision_by_campaign using e['campaign_id'] which is unbounded (fine now but consider an index on {client_id, campaign_id} in db.elections for scale)."
+  ],
+  "updated_files": ["/app/backend/tests/test_campaigns_elections.py"],
+  "success_rate": {"backend": "100% (16/16)", "frontend": "100% (all flows)"},
+  "test_credentials": "super@test.com/newpass123, admin@test.com/admin123, manager@test.com/manager123, marketer@test.com/marketer123 (per /app/memory/test_credentials.md)",
+  "seed_data_creation": "Only transient TEST_ campaigns created and deleted within tests. During tests, manager was temporarily assigned/unassigned to a client and marketer temporarily assigned/unassigned to a campaign — restored after each test. Seed set (4 users, seed campaigns, 3 clients) preserved.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Regression suite for campaigns/elections refactor is at /app/backend/tests/test_campaigns_elections.py (16 tests, ~9s). Backend endpoints validated: POST/GET/PUT/DELETE /api/campaigns (with scope=mine|all), GET /api/campaigns/:id/uptake, GET /api/clients/:id/elections, PUT /api/clients/:id/campaigns/:campaignId/election, GET /api/clients?scope, GET /api/clients/:id/activity. Frontend testids confirmed: new-campaign-button, campaign-scope-toggle, scope-mine, scope-all, client-scope-toggle, client-scope-mine, client-scope-all, elections-section, election-<campaignId>-{not_elected|opt_in|opt_out}, campaign-uptake, view-client-<id>, view-campaign-<id>, submit-button, nav-dashboard, nav-clients, nav-campaigns. Client rows do NOT navigate on row click — use the eye/view-* action button.",
+  "rca of the issue": "N/A — no bugs found. The refactor works as specified across all four roles."
+}
