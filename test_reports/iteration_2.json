@@ -1,0 +1,19 @@
+{
+  "summary": "Verified Dashboard vs Clients routing separation for superuser. All 8 scenarios passed: login redirects to /clients; nav-dashboard shows placeholder DashboardHome with coming-soon + quick links and no client stats/rows; nav-clients shows Client Management with stats (Total=3, Active=2, Inactive=1, Platforms=2), 3 client rows, and Add Client button; dashboard-go-clients & quicklink-clients navigate to /clients; view-client and Back to Clients work; add-client-button opens /clients/new and Cancel returns to /clients; nav-campaigns opens /campaigns; header titles correct on both routes.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped)", "frontend": "100% (8/8 scenarios)"},
+  "test_credentials": "super@test.com / newpass123",
+  "seed_data_creation": "None - used existing 3 seeded clients",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Routing fix verified. /dashboard renders DashboardHome placeholder; /clients renders client management. Login lands on /clients. No regressions in client detail, add-client, campaigns navigation."
+}
