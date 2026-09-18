@@ -53,6 +53,11 @@ export const Layout = ({ children, pageTitle }) => {
 
   const { title, subtitle, action } = getPageInfo();
 
+  const role = user.role;
+  const isAdmin = role === 'administrator' || role === 'superuser';
+  const isCampaignManager = role === 'marketer';
+  const isClientManager = role === 'client_manager';
+
   const initials = (user.full_name || 'U')
     .split(' ')
     .map((n) => n[0])
@@ -84,34 +89,40 @@ export const Layout = ({ children, pageTitle }) => {
         </div>
 
         <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto">
-          <button
-            onClick={() => navigate('/dashboard')}
-            data-testid="nav-dashboard"
-            className={navItemClass(location.pathname === '/dashboard')}
-          >
-            <LayoutDashboard className="h-5 w-5" strokeWidth={1.75} />
-            Dashboard
-          </button>
+          {!isCampaignManager && (
+            <button
+              onClick={() => navigate('/dashboard')}
+              data-testid="nav-dashboard"
+              className={navItemClass(location.pathname === '/dashboard')}
+            >
+              <LayoutDashboard className="h-5 w-5" strokeWidth={1.75} />
+              Dashboard
+            </button>
+          )}
 
-          <button
-            onClick={() => navigate('/clients')}
-            data-testid="nav-clients"
-            className={navItemClass(isActive('/clients'))}
-          >
-            <Users className="h-5 w-5" strokeWidth={1.75} />
-            Clients
-          </button>
+          {!isCampaignManager && (
+            <button
+              onClick={() => navigate('/clients')}
+              data-testid="nav-clients"
+              className={navItemClass(isActive('/clients'))}
+            >
+              <Users className="h-5 w-5" strokeWidth={1.75} />
+              Clients
+            </button>
+          )}
 
-          <button
-            onClick={() => navigate('/campaigns')}
-            data-testid="nav-campaigns"
-            className={navItemClass(isActive('/campaigns'))}
-          >
-            <Calendar className="h-5 w-5" strokeWidth={1.75} />
-            Campaigns
-          </button>
+          {!isClientManager && (
+            <button
+              onClick={() => navigate('/campaigns')}
+              data-testid="nav-campaigns"
+              className={navItemClass(isActive('/campaigns'))}
+            >
+              <Calendar className="h-5 w-5" strokeWidth={1.75} />
+              Campaigns
+            </button>
+          )}
 
-          {(user.role === 'administrator' || user.role === 'superuser') && (
+          {isAdmin && (
             <>
               <div className="px-4 pt-5 pb-2">
                 <p className="text-[10px] uppercase tracking-[0.2em] font-semibold text-white/30">Settings</p>

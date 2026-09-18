@@ -23,7 +23,13 @@ export default function Login() {
       localStorage.setItem('token', response.access_token);
       localStorage.setItem('user', JSON.stringify(response.user));
       toast.success('Login successful');
-      navigate('/clients');
+      if (response.user?.must_change_password) {
+        navigate('/change-password');
+      } else if (response.user?.role === 'marketer') {
+        navigate('/campaigns');
+      } else {
+        navigate('/clients');
+      }
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Login failed');
     } finally {

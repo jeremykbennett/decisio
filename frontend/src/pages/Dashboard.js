@@ -29,16 +29,18 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const canManage = user.role === 'administrator' || user.role === 'superuser';
+  const isClientManager = user.role === 'client_manager';
+  const [scope, setScope] = useState(isClientManager ? 'mine' : 'all');
 
   useEffect(() => {
     fetchClients();
-  }, [search]);
+  }, [search, scope]);
 
   const fetchClients = async () => {
     try {
       const response = await axios.get(`${API}/clients`, {
         headers: getAuthHeaders(),
-        params: { search }
+        params: { search, scope }
       });
       setClients(response.data);
     } catch (error) {
@@ -124,6 +126,20 @@ export default function Dashboard() {
               className="pl-10 h-11 rounded-xl bg-white border-border focus-visible:ring-2 focus-visible:ring-primary/30"
             />
           </div>
+          {isClientManager && (
+            <div className="inline-flex rounded-xl border border-border bg-white p-1" data-testid="client-scope-toggle">
+              {[['mine', 'My Clients'], ['all', 'All Clients']].map(([val, label]) => (
+                <button
+                  key={val}
+                  onClick={() => setScope(val)}
+                  data-testid={`client-scope-${val}`}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${scope === val ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Clients table */}

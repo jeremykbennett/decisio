@@ -146,11 +146,11 @@ class Campaign(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     campaign_name: str
-    client_id: str
+    client_id: Optional[str] = None  # deprecated: campaigns are now global
     election_start_date: str  # ISO date string
     election_end_date: str    # ISO date string
     channel: str
-    marketing_contacts: List[str]  # List of user IDs
+    marketing_contacts: List[str]  # List of user IDs (Campaign Managers)
     article_url: str = ""
     campaign_products: List[str]
     custom_fields: dict = Field(default_factory=dict)
@@ -160,7 +160,6 @@ class Campaign(BaseModel):
 
 class CampaignCreate(BaseModel):
     campaign_name: str
-    client_id: str
     election_start_date: str
     election_end_date: str
     channel: str
@@ -176,6 +175,11 @@ class CampaignUpdate(BaseModel):
     marketing_contacts: Optional[List[str]] = None
     article_url: Optional[str] = None
     campaign_products: Optional[List[str]] = None
+
+ELECTION_DECISIONS = {"not_elected", "opt_in", "opt_out"}
+
+class ElectionUpdate(BaseModel):
+    decision: str  # not_elected | opt_in | opt_out
 
 # Auth utilities
 def verify_password(plain_password, hashed_password):
@@ -245,6 +249,13 @@ def is_admin_or_superuser(user: User) -> bool:
 def is_superuser(user: User) -> bool:
     """Check if user is superuser"""
     return user.role == "superuser"
+
+def is_client_manager(user: User) -> bool:
+    return user.role == "client_manager"
+
+def is_campaign_manager(user: User) -> bool:
+    """Campaign Manager is stored under the legacy 'marketer' role"""
+    return user.role == "marketer"
 
 # Auth endpoints
 @api_router.post("/auth/register", response_model=Token)
@@ -544,15 +555,19 @@ async def list_clients(
     search: str = "",
     platform: str = "",
     client_status: str = "",
+    scope: str = "mine",
     current_user: User = Depends(get_current_user)
 ):
+    # Campaign Managers (marketer role) have no access to clients
+    if is_campaign_manager(current_user):
+        raise HTTPException(status_code=403, detail="Campaign Managers do not have access to clients")
+
     query = {}
-    
-    # Marketers only see clients they're assigned to
-    # Administrators and Client Managers see all clients
-    if current_user.role == "marketer":
+
+    # Client Managers default to their assigned clients; can toggle to view all
+    if is_client_manager(current_user) and scope != "all":
         query["client_managers"] = current_user.id
-    
+
     if search:
         query["$or"] = [
             {"client_name": {"$regex": search, "$options": "i"}},
@@ -578,14 +593,12 @@ async def list_clients(
 
 @api_router.get("/clients/{client_id}", response_model=Client)
 async def get_client(client_id: str, current_user: User = Depends(get_current_user)):
+    if is_campaign_manager(current_user):
+        raise HTTPException(status_code=403, detail="Campaign Managers do not have access to clients")
+
     client = await db.clients.find_one({"id": client_id}, {"_id": 0})
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
-    
-    # Marketers can only view clients they're assigned to
-    # Administrators and Client Managers can view all clients
-    if current_user.role == "marketer" and current_user.id not in client.get("client_managers", []):
-        raise HTTPException(status_code=403, detail="Access denied")
     
     # Convert ISO strings back to datetime
     if isinstance(client.get("created_at"), str):
@@ -597,22 +610,21 @@ async def get_client(client_id: str, current_user: User = Depends(get_current_us
 
 @api_router.get("/clients/{client_id}/activity")
 async def get_client_activity(client_id: str, current_user: User = Depends(get_current_user)):
-    """Get activity timeline for a client (includes client and campaign changes)"""
-    # Check if client exists and user has access
+    """Get activity timeline for a client (includes client and election changes)"""
+    if is_campaign_manager(current_user):
+        raise HTTPException(status_code=403, detail="Campaign Managers do not have access to clients")
+
+    # Check if client exists
     client = await db.clients.find_one({"id": client_id}, {"_id": 0})
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
     
-    # Check permissions (same as get_client)
-    if current_user.role == "marketer" and current_user.id not in client.get("client_managers", []):
-        raise HTTPException(status_code=403, detail="Access denied")
-    
-    # Fetch all activity logs for this client and its campaigns
+    # Fetch all activity logs for this client and its elections
     activities = await db.activity_logs.find(
         {
             "$or": [
                 {"entity_id": client_id},  # Client activities
-                {"client_id": client_id}   # Campaign activities for this client
+                {"client_id": client_id}   # Election/campaign activities for this client
             ]
         },
         {"_id": 0}
@@ -877,12 +889,7 @@ async def delete_custom_field(
 async def create_campaign(campaign_data: CampaignCreate, current_user: User = Depends(get_current_user)):
     if not is_admin_or_superuser(current_user):
         raise HTTPException(status_code=403, detail="Only administrators and superusers can create campaigns")
-    
-    # Verify client exists
-    client = await db.clients.find_one({"id": campaign_data.client_id})
-    if not client:
-        raise HTTPException(status_code=404, detail="Client not found")
-    
+
     campaign = Campaign(**campaign_data.model_dump(), created_by=current_user.id)
     doc = campaign.model_dump()
     doc["created_at"] = doc["created_at"].isoformat()
@@ -890,7 +897,7 @@ async def create_campaign(campaign_data: CampaignCreate, current_user: User = De
     
     await db.campaigns.insert_one(doc)
     
-    # Log the activity
+    # Log the activity (global campaign, no owning client)
     await log_activity(
         entity_type="campaign",
         entity_id=campaign.id,
@@ -898,32 +905,23 @@ async def create_campaign(campaign_data: CampaignCreate, current_user: User = De
         action="created",
         user_id=current_user.id,
         user_name=current_user.full_name,
-        client_id=campaign_data.client_id
     )
     
     return campaign
 
 @api_router.get("/campaigns", response_model=List[Campaign])
 async def list_campaigns(
-    client_id: str = "",
     search: str = "",
     channel: str = "",
+    scope: str = "mine",
     current_user: User = Depends(get_current_user)
 ):
     query = {}
-    
-    # Marketers only see campaigns for clients they manage
-    if current_user.role == "marketer":
-        managed_clients = await db.clients.find(
-            {"client_managers": current_user.id},
-            {"_id": 0, "id": 1}
-        ).to_list(1000)
-        client_ids = [c["id"] for c in managed_clients]
-        query["client_id"] = {"$in": client_ids}
-    
-    if client_id:
-        query["client_id"] = client_id
-    
+
+    # Campaign Managers (marketer) default to assigned campaigns; can toggle to all
+    if is_campaign_manager(current_user) and scope != "all":
+        query["marketing_contacts"] = current_user.id
+
     if search:
         query["campaign_name"] = {"$regex": search, "$options": "i"}
     
@@ -946,18 +944,34 @@ async def get_campaign(campaign_id: str, current_user: User = Depends(get_curren
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
     
-    # Marketers can only view campaigns for clients they manage
-    if current_user.role == "marketer":
-        client = await db.clients.find_one({"id": campaign["client_id"]})
-        if client and current_user.id not in client.get("client_managers", []):
-            raise HTTPException(status_code=403, detail="Access denied")
-    
     if isinstance(campaign.get("created_at"), str):
         campaign["created_at"] = datetime.fromisoformat(campaign["created_at"])
     if isinstance(campaign.get("updated_at"), str):
         campaign["updated_at"] = datetime.fromisoformat(campaign["updated_at"])
     
     return Campaign(**campaign)
+
+@api_router.get("/campaigns/{campaign_id}/uptake")
+async def get_campaign_uptake(campaign_id: str, current_user: User = Depends(get_current_user)):
+    """Read-only summary of client uptake for a campaign."""
+    campaign = await db.campaigns.find_one({"id": campaign_id}, {"_id": 0})
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    total_clients = await db.clients.count_documents({})
+    elections = await db.elections.find({"campaign_id": campaign_id}, {"_id": 0}).to_list(100000)
+    opt_in = sum(1 for e in elections if e.get("decision") == "opt_in")
+    opt_out = sum(1 for e in elections if e.get("decision") == "opt_out")
+    decided = opt_in + opt_out
+    not_elected = max(total_clients - decided, 0)
+
+    return {
+        "campaign_id": campaign_id,
+        "total_clients": total_clients,
+        "opt_in": opt_in,
+        "opt_out": opt_out,
+        "not_elected": not_elected,
+    }
 
 @api_router.put("/campaigns/{campaign_id}", response_model=Campaign)
 async def update_campaign(
@@ -1019,25 +1033,92 @@ async def delete_campaign(campaign_id: str, current_user: User = Depends(get_cur
     
     return {"message": "Campaign deleted successfully"}
 
-@api_router.get("/clients/{client_id}/campaigns", response_model=List[Campaign])
-async def get_client_campaigns(client_id: str, current_user: User = Depends(get_current_user)):
-    # Verify access to client
-    client = await db.clients.find_one({"id": client_id})
+@api_router.get("/clients/{client_id}/elections")
+async def get_client_elections(client_id: str, current_user: User = Depends(get_current_user)):
+    """Return every (global) campaign with this client's opt-in/opt-out decision."""
+    if is_campaign_manager(current_user):
+        raise HTTPException(status_code=403, detail="Campaign Managers do not have access to clients")
+
+    client = await db.clients.find_one({"id": client_id}, {"_id": 0})
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
-    
-    if current_user.role == "marketer" and current_user.id not in client.get("client_managers", []):
-        raise HTTPException(status_code=403, detail="Access denied")
-    
-    campaigns = await db.campaigns.find({"client_id": client_id}, {"_id": 0}).sort("created_at", -1).to_list(1000)
-    
-    for campaign in campaigns:
-        if isinstance(campaign.get("created_at"), str):
-            campaign["created_at"] = datetime.fromisoformat(campaign["created_at"])
-        if isinstance(campaign.get("updated_at"), str):
-            campaign["updated_at"] = datetime.fromisoformat(campaign["updated_at"])
-    
-    return campaigns
+
+    campaigns = await db.campaigns.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    elections = await db.elections.find({"client_id": client_id}, {"_id": 0}).to_list(100000)
+    decision_by_campaign = {e["campaign_id"]: e.get("decision", "not_elected") for e in elections}
+
+    # Whether the current user may change decisions for this client
+    can_edit = is_admin_or_superuser(current_user) or (
+        is_client_manager(current_user) and current_user.id in client.get("client_managers", [])
+    )
+
+    result = []
+    for c in campaigns:
+        result.append({
+            "campaign_id": c["id"],
+            "campaign_name": c.get("campaign_name"),
+            "channel": c.get("channel"),
+            "election_start_date": c.get("election_start_date"),
+            "election_end_date": c.get("election_end_date"),
+            "campaign_products": c.get("campaign_products", []),
+            "decision": decision_by_campaign.get(c["id"], "not_elected"),
+        })
+
+    return {"can_edit": can_edit, "elections": result}
+
+@api_router.put("/clients/{client_id}/campaigns/{campaign_id}/election")
+async def set_client_election(
+    client_id: str,
+    campaign_id: str,
+    payload: ElectionUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    if payload.decision not in ELECTION_DECISIONS:
+        raise HTTPException(status_code=400, detail="Invalid decision")
+
+    client = await db.clients.find_one({"id": client_id}, {"_id": 0})
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+
+    campaign = await db.campaigns.find_one({"id": campaign_id}, {"_id": 0})
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    can_edit = is_admin_or_superuser(current_user) or (
+        is_client_manager(current_user) and current_user.id in client.get("client_managers", [])
+    )
+    if not can_edit:
+        raise HTTPException(status_code=403, detail="You do not have permission to set this election")
+
+    existing = await db.elections.find_one({"client_id": client_id, "campaign_id": campaign_id}, {"_id": 0})
+    old_decision = existing.get("decision", "not_elected") if existing else "not_elected"
+
+    now = datetime.now(timezone.utc).isoformat()
+    await db.elections.update_one(
+        {"client_id": client_id, "campaign_id": campaign_id},
+        {"$set": {
+            "client_id": client_id,
+            "campaign_id": campaign_id,
+            "decision": payload.decision,
+            "updated_by": current_user.id,
+            "updated_at": now,
+        }},
+        upsert=True
+    )
+
+    # Audit log on the client timeline
+    await log_activity(
+        entity_type="election",
+        entity_id=campaign_id,
+        entity_name=campaign.get("campaign_name", "Unknown"),
+        action="updated",
+        user_id=current_user.id,
+        user_name=current_user.full_name,
+        changes={"decision": {"old": old_decision, "new": payload.decision}},
+        client_id=client_id,
+    )
+
+    return {"client_id": client_id, "campaign_id": campaign_id, "decision": payload.decision}
 
 # Health check
 @api_router.get("/")

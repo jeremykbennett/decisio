@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import Layout from '../components/Layout';
 import ActivityTimeline from '../components/ActivityTimeline';
 import { Button } from '../components/ui/button';
-import { ArrowLeft, Edit, Mail, Phone, FileText, MessageSquare, Calendar, Plus, Activity, Users, Sparkles } from 'lucide-react';
+import { ArrowLeft, Edit, Mail, Phone, FileText, MessageSquare, Calendar, Activity, Users, Sparkles } from 'lucide-react';
 
 const BACKEND_URL = (typeof window !== 'undefined' && window.location && window.location.origin) ? window.location.origin : process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -16,7 +16,8 @@ export default function ClientDetail() {
   const navigate = useNavigate();
   const [client, setClient] = useState(null);
   const [managers, setManagers] = useState([]);
-  const [campaigns, setCampaigns] = useState([]);
+  const [elections, setElections] = useState([]);
+  const [electionsCanEdit, setElectionsCanEdit] = useState(false);
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -24,7 +25,7 @@ export default function ClientDetail() {
 
   useEffect(() => {
     fetchClient();
-    fetchCampaigns();
+    fetchElections();
     fetchActivities();
   }, [id]);
 
@@ -52,14 +53,30 @@ export default function ClientDetail() {
     }
   };
 
-  const fetchCampaigns = async () => {
+  const fetchElections = async () => {
     try {
-      const response = await axios.get(`${API}/clients/${id}/campaigns`, {
+      const response = await axios.get(`${API}/clients/${id}/elections`, {
         headers: getAuthHeaders()
       });
-      setCampaigns(response.data);
+      setElections(response.data.elections || []);
+      setElectionsCanEdit(!!response.data.can_edit);
     } catch (error) {
-      console.error('Failed to fetch campaigns');
+      console.error('Failed to fetch elections');
+    }
+  };
+
+  const setElection = async (campaignId, decision) => {
+    try {
+      await axios.put(
+        `${API}/clients/${id}/campaigns/${campaignId}/election`,
+        { decision },
+        { headers: getAuthHeaders() }
+      );
+      setElections((prev) => prev.map((e) => e.campaign_id === campaignId ? { ...e, decision } : e));
+      toast.success('Decision updated');
+      fetchActivities();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to update decision');
     }
   };
 
@@ -245,49 +262,55 @@ export default function ClientDetail() {
           </div>
         </div>
 
-        {/* Campaigns Section */}
-        <div className="glass-card rounded-2xl p-6" data-testid="campaigns-section">
+        {/* Opt-in / Opt-out per campaign */}
+        <div className="glass-card rounded-2xl p-6" data-testid="elections-section">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4 text-primary" strokeWidth={1.75} />
-              <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Campaigns</p>
+              <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Campaign Opt-in / Opt-out</p>
             </div>
-            {canManage && (
-              <Button
-                onClick={() => navigate(`/clients/${id}/campaigns/new`)}
-                data-testid="add-campaign-to-client"
-                className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-4 py-2 text-xs font-semibold"
-              >
-                <Plus className="h-3 w-3 mr-2" strokeWidth={2} />
-                Add Campaign
-              </Button>
+            {!electionsCanEdit && (
+              <span className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground bg-muted px-2.5 py-1 rounded-full">Read-only</span>
             )}
           </div>
-          {campaigns.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">No campaigns for this client yet</p>
+          {elections.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">No campaigns available yet</p>
           ) : (
             <div className="space-y-3">
-              {campaigns.map((campaign) => (
+              {elections.map((e) => (
                 <div
-                  key={campaign.id}
-                  className="flex items-center justify-between p-4 rounded-xl border border-border hover:border-primary/40 hover:bg-primary/[0.03] transition-all cursor-pointer"
-                  onClick={() => navigate(`/clients/${id}/campaigns/${campaign.id}/edit`)}
-                  data-testid={`campaign-item-${campaign.id}`}
+                  key={e.campaign_id}
+                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-border"
+                  data-testid={`election-item-${e.campaign_id}`}
                 >
-                  <div className="flex-1">
-                    <p className="font-semibold text-sm text-foreground">{campaign.campaign_name}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm text-foreground">{e.campaign_name}</p>
                     <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" strokeWidth={1.75} />
-                        {formatDate(campaign.election_start_date)} - {formatDate(campaign.election_end_date)}
+                        {formatDate(e.election_start_date)} - {formatDate(e.election_end_date)}
                       </span>
                       <span>•</span>
-                      <span>{campaign.channel}</span>
+                      <span>{e.channel}</span>
                     </div>
                   </div>
-                  <span className="text-xs font-medium text-muted-foreground bg-muted px-2.5 py-1 rounded-full">
-                    {campaign.campaign_products?.length || 0} products
-                  </span>
+                  <div className="inline-flex rounded-xl border border-border bg-white p-1 shrink-0" data-testid={`election-control-${e.campaign_id}`}>
+                    {[
+                      ['not_elected', 'Not elected', 'text-slate-600', 'bg-slate-200 text-slate-800'],
+                      ['opt_in', 'Opt-in', 'text-emerald-600', 'bg-emerald-500 text-white'],
+                      ['opt_out', 'Opt-out', 'text-red-600', 'bg-red-500 text-white'],
+                    ].map(([val, label, idle, activeCls]) => (
+                      <button
+                        key={val}
+                        disabled={!electionsCanEdit}
+                        onClick={() => electionsCanEdit && setElection(e.campaign_id, val)}
+                        data-testid={`election-${e.campaign_id}-${val}`}
+                        className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${e.decision === val ? activeCls : `${idle} hover:bg-muted`} ${!electionsCanEdit ? 'cursor-not-allowed opacity-70' : ''}`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>

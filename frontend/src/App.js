@@ -108,15 +108,7 @@ function App() {
             }
           />
           <Route
-            path="/clients/:clientId/campaigns/new"
-            element={
-              <ProtectedRoute>
-                <CampaignForm />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/clients/:clientId/campaigns/:id/edit"
+            path="/campaigns/new"
             element={
               <ProtectedRoute>
                 <CampaignForm />

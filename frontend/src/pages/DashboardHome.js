@@ -7,8 +7,10 @@ import { Users, Calendar, LayoutDashboard, ArrowRight, Hammer } from 'lucide-rea
 export default function DashboardHome() {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const isCampaignManager = user.role === 'marketer';
+  const isClientManager = user.role === 'client_manager';
 
-  const quickLinks = [
+  const allQuickLinks = [
     {
       title: 'Clients',
       description: 'View and manage your clients and their decision records.',
@@ -16,6 +18,7 @@ export default function DashboardHome() {
       to: '/clients',
       tint: 'bg-primary/10 text-primary',
       testid: 'quicklink-clients',
+      hidden: isCampaignManager,
     },
     {
       title: 'Campaigns',
@@ -24,8 +27,10 @@ export default function DashboardHome() {
       to: '/campaigns',
       tint: 'bg-emerald-50 text-emerald-600',
       testid: 'quicklink-campaigns',
+      hidden: isClientManager,
     },
   ];
+  const quickLinks = allQuickLinks.filter((l) => !l.hidden);
 
   return (
     <Layout>
