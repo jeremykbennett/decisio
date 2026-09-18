@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+
+# Build
+build/
+dist/
+
+# Env (keep .env for preview config, ignore local overrides)
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Misc
+.DS_Store
+*.log
+coverage/

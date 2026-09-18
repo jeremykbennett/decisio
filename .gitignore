@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Build output
+/frontend/build/
+/frontend/dist/
+build/
+dist/
+
+# Env
+.env.local
+*.log
+
+# Misc
+.DS_Store
+coverage/

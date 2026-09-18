@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import Layout from '../components/Layout';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { Search, Eye, Edit, Trash2 } from 'lucide-react';
+import { Search, Eye, Edit, Trash2, Users, CheckCircle2, PauseCircle, Layers } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +28,7 @@ export default function Dashboard() {
   const [deleteId, setDeleteId] = useState(null);
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const canManage = user.role === 'administrator' || user.role === 'superuser';
 
   useEffect(() => {
     fetchClients();
@@ -62,17 +63,54 @@ export default function Dashboard() {
 
   const getStatusColor = (status) => {
     const colors = {
-      active: 'bg-green-100 text-green-800',
-      inactive: 'bg-gray-100 text-gray-800',
-      'opt in': 'bg-green-100 text-green-800',
-      'opt out': 'bg-red-100 text-red-800'
+      active: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200',
+      inactive: 'bg-slate-100 text-slate-600 ring-1 ring-slate-200',
+      'opt in': 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200',
+      'opt out': 'bg-red-50 text-red-700 ring-1 ring-red-200'
     };
-    return colors[status?.toLowerCase()] || 'bg-blue-100 text-blue-800';
+    return colors[status?.toLowerCase()] || 'bg-primary/10 text-primary ring-1 ring-primary/20';
+  };
+
+  const activeCount = clients.filter((c) => ['active', 'opt in'].includes(c.client_status?.toLowerCase())).length;
+  const inactiveCount = clients.length - activeCount;
+  const platformCount = new Set(clients.map((c) => c.platform).filter(Boolean)).size;
+
+  const stats = [
+    { label: 'Total Clients', value: clients.length, icon: Users, tint: 'bg-primary/10 text-primary' },
+    { label: 'Active', value: activeCount, icon: CheckCircle2, tint: 'bg-emerald-50 text-emerald-600' },
+    { label: 'Inactive', value: inactiveCount, icon: PauseCircle, tint: 'bg-slate-100 text-slate-500' },
+    { label: 'Platforms', value: platformCount, icon: Layers, tint: 'bg-indigo-50 text-indigo-600' },
+  ];
+
+  const clientColor = (name) => {
+    const palette = ['from-primary to-indigo-500', 'from-emerald-500 to-teal-500', 'from-fuchsia-500 to-purple-500', 'from-amber-500 to-orange-500', 'from-sky-500 to-blue-500'];
+    const idx = (name || '').split('').reduce((a, ch) => a + ch.charCodeAt(0), 0) % palette.length;
+    return palette[idx];
   };
 
   return (
     <Layout>
       <div className="space-y-6">
+        {/* Stat cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4" data-testid="dashboard-stats">
+          {stats.map(({ label, value, icon: Icon, tint }, i) => (
+            <div
+              key={label}
+              className="glass-card rounded-2xl p-5 flex items-center justify-between animate-rise"
+              style={{ animationDelay: `${i * 70}ms` }}
+              data-testid={`stat-${label.toLowerCase().replace(/\s/g, '-')}`}
+            >
+              <div>
+                <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">{label}</p>
+                <p className="font-display text-3xl font-bold text-foreground mt-1 font-data">{value}</p>
+              </div>
+              <div className={`h-12 w-12 rounded-xl flex items-center justify-center ${tint}`}>
+                <Icon className="h-6 w-6" strokeWidth={1.75} />
+              </div>
+            </div>
+          ))}
+        </div>
+
         {/* Search bar */}
         <div className="flex items-center gap-4">
           <div className="relative flex-1 max-w-md">
@@ -83,22 +121,26 @@ export default function Dashboard() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               data-testid="search-clients-input"
-              className="pl-10 rounded-none border border-input"
+              className="pl-10 h-11 rounded-xl bg-white border-border focus-visible:ring-2 focus-visible:ring-primary/30"
             />
           </div>
         </div>
 
         {/* Clients table */}
-        <div className="bg-white border border-border rounded-none overflow-hidden">
+        <div className="glass-card rounded-2xl overflow-hidden">
           {loading ? (
-            <div className="p-8 text-center text-sm text-muted-foreground">Loading clients...</div>
+            <div className="p-12 text-center text-sm text-muted-foreground">Loading clients...</div>
           ) : clients.length === 0 ? (
-            <div className="p-8 text-center">
-              <p className="text-sm text-muted-foreground">No clients found</p>
-              {user.role === 'administrator' || user.role === 'superuser' && (
+            <div className="p-16 text-center">
+              <div className="mx-auto h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+                <Users className="h-7 w-7 text-primary" strokeWidth={1.5} />
+              </div>
+              <p className="font-display text-lg font-semibold text-foreground">No clients yet</p>
+              <p className="text-sm text-muted-foreground mt-1">Get started by adding your first client.</p>
+              {canManage && (
                 <Button
                   onClick={() => navigate('/clients/new')}
-                  className="mt-4 bg-primary text-primary-foreground hover:bg-primary/90 rounded-none"
+                  className="mt-5 bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-5 font-semibold shadow-lg shadow-primary/20"
                   data-testid="empty-state-add-button"
                 >
                   Add Your First Client
@@ -108,51 +150,58 @@ export default function Dashboard() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-muted/50 border-b border-border">
+                <thead className="bg-muted/60 border-b border-border">
                   <tr>
-                    <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3">Policy ID</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3">Client Name</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3">Platform</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3">Status</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3">Account Type</th>
-                    <th className="text-right text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3">Actions</th>
+                    <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-6 py-4">Policy ID</th>
+                    <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-6 py-4">Client Name</th>
+                    <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-6 py-4">Platform</th>
+                    <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-6 py-4">Status</th>
+                    <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-6 py-4">Account Type</th>
+                    <th className="text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider px-6 py-4">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {clients.map((client) => (
                     <tr
                       key={client.id}
-                      className="border-b border-border hover:bg-muted/30 transition-colors"
+                      className="border-b border-border/60 last:border-0 hover:bg-primary/[0.03] transition-colors"
                       data-testid={`client-row-${client.id}`}
                     >
-                      <td className="p-4 text-sm font-mono font-medium text-foreground">{client.policy_id}</td>
-                      <td className="p-4 text-sm font-medium text-foreground">{client.client_name}</td>
-                      <td className="p-4 text-sm text-foreground">{client.platform}</td>
-                      <td className="p-4">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-none text-xs font-medium ${getStatusColor(client.client_status)}`}>
+                      <td className="px-6 py-4 text-sm font-data font-medium text-muted-foreground">{client.policy_id}</td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className={`h-9 w-9 rounded-lg bg-gradient-to-br ${clientColor(client.client_name)} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
+                            {(client.client_name || '?').slice(0, 2).toUpperCase()}
+                          </div>
+                          <span className="text-sm font-semibold text-foreground">{client.client_name}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-foreground">{client.platform}</td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(client.client_status)}`}>
                           {client.client_status}
                         </span>
                       </td>
-                      <td className="p-4 text-sm text-foreground">{client.account_type}</td>
-                      <td className="p-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
+                      <td className="px-6 py-4 text-sm text-foreground">{client.account_type}</td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-1">
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => navigate(`/clients/${client.id}`)}
                             data-testid={`view-client-${client.id}`}
-                            className="rounded-none hover:bg-muted"
+                            className="rounded-lg hover:bg-primary/10 hover:text-primary"
                           >
                             <Eye className="h-4 w-4" strokeWidth={1.5} />
                           </Button>
-                          {user.role === 'administrator' || user.role === 'superuser' && (
+                          {canManage && (
                             <>
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => navigate(`/clients/${client.id}/edit`)}
                                 data-testid={`edit-client-${client.id}`}
-                                className="rounded-none hover:bg-muted"
+                                className="rounded-lg hover:bg-primary/10 hover:text-primary"
                               >
                                 <Edit className="h-4 w-4" strokeWidth={1.5} />
                               </Button>
@@ -161,7 +210,7 @@ export default function Dashboard() {
                                 size="sm"
                                 onClick={() => setDeleteId(client.id)}
                                 data-testid={`delete-client-${client.id}`}
-                                className="rounded-none hover:bg-destructive/10 hover:text-destructive"
+                                className="rounded-lg hover:bg-destructive/10 hover:text-destructive"
                               >
                                 <Trash2 className="h-4 w-4" strokeWidth={1.5} />
                               </Button>
@@ -180,7 +229,7 @@ export default function Dashboard() {
 
       {/* Delete confirmation dialog */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
-        <AlertDialogContent className="rounded-none">
+        <AlertDialogContent className="rounded-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Client</AlertDialogTitle>
             <AlertDialogDescription>
@@ -188,11 +237,11 @@ export default function Dashboard() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-none" data-testid="cancel-delete">Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="rounded-xl" data-testid="cancel-delete">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               data-testid="confirm-delete"
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-none"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl"
             >
               Delete
             </AlertDialogAction>
