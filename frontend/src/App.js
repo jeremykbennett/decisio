@@ -13,6 +13,7 @@ import CampaignForm from './pages/CampaignForm';
 import Settings from './pages/Settings';
 import CampaignSettings from './pages/CampaignSettings';
 import UserManagement from './pages/UserManagement';
+import ChangePassword from './pages/ChangePassword';
 import ProtectedRoute from './components/ProtectedRoute';
 import { Toaster } from './components/ui/sonner';
 import './App.css';
@@ -26,6 +27,14 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route
+            path="/change-password"
+            element={
+              <ProtectedRoute bypassPasswordGate>
+                <ChangePassword />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/dashboard"
             element={

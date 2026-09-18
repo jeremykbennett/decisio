@@ -56,12 +56,17 @@ class BulkInviteRequest(BaseModel):
     emails: List[str]
     role: str = "marketer"
 
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
 class User(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     email: str
     full_name: str
     role: str
+    must_change_password: bool = False
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class Token(BaseModel):
@@ -288,6 +293,28 @@ async def login(user_data: UserLogin):
     
     return Token(access_token=access_token, token_type="bearer", user=user_obj)
 
+@api_router.post("/auth/change-password")
+async def change_password(payload: ChangePasswordRequest, current_user: User = Depends(get_current_user)):
+    """Change the current user's password. Used for forced first-login password reset."""
+    user = await db.users.find_one({"id": current_user.id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if not verify_password(payload.current_password, user["password"]):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+
+    if len(payload.new_password) < 8:
+        raise HTTPException(status_code=400, detail="New password must be at least 8 characters")
+
+    if verify_password(payload.new_password, user["password"]):
+        raise HTTPException(status_code=400, detail="New password must be different from the current password")
+
+    await db.users.update_one(
+        {"id": current_user.id},
+        {"$set": {"password": get_password_hash(payload.new_password), "must_change_password": False}}
+    )
+    return {"message": "Password changed successfully"}
+
 @api_router.post("/auth/forgot-password")
 async def forgot_password(request: PasswordResetRequest):
     """Generate password reset token for user"""
@@ -420,7 +447,7 @@ async def bulk_invite_users(payload: BulkInviteRequest, current_user: User = Dep
 
         temp_password = _generate_temp_password()
         full_name = email.split("@")[0].replace(".", " ").replace("_", " ").title()
-        user = User(email=email, full_name=full_name, role=role)
+        user = User(email=email, full_name=full_name, role=role, must_change_password=True)
         doc = user.model_dump()
         doc["password"] = get_password_hash(temp_password)
         doc["created_at"] = doc["created_at"].isoformat()

@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { isAuthenticated, authAPI } from '../utils/auth';
 
-export const ProtectedRoute = ({ children }) => {
+export const ProtectedRoute = ({ children, bypassPasswordGate = false }) => {
   const [loading, setLoading] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
+  const [mustChange, setMustChange] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -14,7 +15,9 @@ export const ProtectedRoute = ({ children }) => {
       }
 
       try {
-        await authAPI.getProfile();
+        const profile = await authAPI.getProfile();
+        localStorage.setItem('user', JSON.stringify(profile));
+        setMustChange(!!profile.must_change_password);
         setAuthenticated(true);
       } catch (error) {
         localStorage.removeItem('token');
@@ -37,6 +40,10 @@ export const ProtectedRoute = ({ children }) => {
 
   if (!authenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (mustChange && !bypassPasswordGate) {
+    return <Navigate to="/change-password" replace />;
   }
 
   return children;

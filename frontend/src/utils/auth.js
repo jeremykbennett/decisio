@@ -20,6 +20,14 @@ export const authAPI = {
       headers: { Authorization: `Bearer ${token}` }
     });
     return response.data;
+  },
+
+  changePassword: async (data) => {
+    const token = localStorage.getItem('token');
+    const response = await axios.post(`${API}/auth/change-password`, data, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.data;
   }
 };
 
