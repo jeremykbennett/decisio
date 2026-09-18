@@ -7,7 +7,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Shield, Trash2, Plus, Users } from 'lucide-react';
+import { Shield, Trash2, Plus } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -121,13 +121,21 @@ export default function UserManagement() {
 
   const getRoleBadgeColor = (role) => {
     const colors = {
-      superuser: 'bg-purple-100 text-purple-800',
-      administrator: 'bg-blue-100 text-blue-800',
-      client_manager: 'bg-green-100 text-green-800',
-      marketer: 'bg-gray-100 text-gray-800'
+      superuser: 'bg-purple-50 text-purple-700 ring-1 ring-purple-200',
+      administrator: 'bg-primary/10 text-primary ring-1 ring-primary/20',
+      client_manager: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200',
+      marketer: 'bg-slate-100 text-slate-600 ring-1 ring-slate-200'
     };
-    return colors[role] || 'bg-gray-100 text-gray-800';
+    return colors[role] || 'bg-slate-100 text-slate-600 ring-1 ring-slate-200';
   };
+
+  const avatarColor = (name) => {
+    const palette = ['from-primary to-indigo-500', 'from-emerald-500 to-teal-500', 'from-fuchsia-500 to-purple-500', 'from-amber-500 to-orange-500', 'from-sky-500 to-blue-500'];
+    const idx = (name || '').split('').reduce((a, ch) => a + ch.charCodeAt(0), 0) % palette.length;
+    return palette[idx];
+  };
+
+  const initials = (name) => (name || 'U').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
 
   return (
     <Layout pageTitle="User Management">
@@ -141,49 +149,51 @@ export default function UserManagement() {
           <Button
             onClick={() => setShowCreateDialog(true)}
             data-testid="create-user-button"
-            className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-none"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl font-semibold shadow-lg shadow-primary/20"
           >
             <Plus className="h-4 w-4 mr-2" strokeWidth={1.5} />
             Create User
           </Button>
         </div>
 
-        <div className="bg-white border border-border rounded-none overflow-hidden">
+        <div className="glass-card rounded-2xl overflow-hidden">
           {loading ? (
             <div className="p-8 text-center text-sm text-muted-foreground">Loading users...</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-muted/50 border-b border-border">
+                <thead className="bg-muted/60 border-b border-border">
                   <tr>
-                    <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3">User</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3">Email</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3">Role</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3">Change Role</th>
-                    <th className="text-right text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3">Actions</th>
+                    <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 py-4">User</th>
+                    <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 py-4">Email</th>
+                    <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 py-4">Role</th>
+                    <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 py-4">Change Role</th>
+                    <th className="text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 py-4">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {users.map((user) => (
                     <tr
                       key={user.id}
-                      className="border-b border-border hover:bg-muted/30 transition-colors"
+                      className="border-b border-border/60 last:border-0 hover:bg-primary/[0.03] transition-colors"
                       data-testid={`user-row-${user.id}`}
                     >
                       <td className="p-4">
-                        <div className="flex items-center gap-2">
-                          <Users className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
-                          <span className="text-sm font-medium text-foreground">{user.full_name}</span>
+                        <div className="flex items-center gap-3">
+                          <div className={`h-9 w-9 rounded-full bg-gradient-to-br ${avatarColor(user.full_name)} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
+                            {initials(user.full_name)}
+                          </div>
+                          <span className="text-sm font-semibold text-foreground">{user.full_name}</span>
                           {user.id === currentUser.id && (
-                            <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-none">You</span>
+                            <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full font-medium">You</span>
                           )}
                         </div>
                       </td>
                       <td className="p-4 text-sm text-foreground">{user.email}</td>
                       <td className="p-4">
                         <div>
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-none text-xs font-medium ${getRoleBadgeColor(user.role)}`}>
-                            {user.role === 'superuser' && <Shield className="h-3 w-3 mr-1" strokeWidth={1.5} />}
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(user.role)}`}>
+                            {user.role === 'superuser' && <Shield className="h-3 w-3 mr-1" strokeWidth={1.75} />}
                             {ROLE_LABELS[user.role]}
                           </span>
                           <p className="text-xs text-muted-foreground mt-1">{ROLE_DESCRIPTIONS[user.role]}</p>
@@ -195,7 +205,7 @@ export default function UserManagement() {
                             value={user.role}
                             onValueChange={(value) => handleRoleChange(user.id, value)}
                           >
-                            <SelectTrigger data-testid={`role-select-${user.id}`} className="rounded-none w-48">
+                            <SelectTrigger data-testid={`role-select-${user.id}`} className="rounded-xl h-11 w-48">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -216,7 +226,7 @@ export default function UserManagement() {
                             size="sm"
                             onClick={() => setDeleteId(user.id)}
                             data-testid={`delete-user-${user.id}`}
-                            className="rounded-none hover:bg-destructive/10 hover:text-destructive"
+                            className="rounded-xl hover:bg-destructive/10 hover:text-destructive"
                           >
                             <Trash2 className="h-4 w-4" strokeWidth={1.5} />
                           </Button>
@@ -235,7 +245,7 @@ export default function UserManagement() {
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
-        <AlertDialogContent className="rounded-none">
+        <AlertDialogContent className="rounded-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete User</AlertDialogTitle>
             <AlertDialogDescription>
@@ -243,10 +253,10 @@ export default function UserManagement() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-none">Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-none"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl"
             >
               Delete
             </AlertDialogAction>
@@ -256,7 +266,7 @@ export default function UserManagement() {
 
       {/* Create User Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent className="rounded-none">
+        <DialogContent className="rounded-2xl">
           <DialogHeader>
             <DialogTitle>Create New User</DialogTitle>
             <DialogDescription>
@@ -272,7 +282,7 @@ export default function UserManagement() {
                 value={newUser.full_name}
                 onChange={(e) => setNewUser({ ...newUser, full_name: e.target.value })}
                 placeholder="John Doe"
-                className="rounded-none"
+                className="rounded-xl"
               />
             </div>
 
@@ -284,7 +294,7 @@ export default function UserManagement() {
                 value={newUser.email}
                 onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
                 placeholder="user@company.com"
-                className="rounded-none"
+                className="rounded-xl"
               />
             </div>
 
@@ -296,7 +306,7 @@ export default function UserManagement() {
                 value={newUser.password}
                 onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
                 placeholder="••••••••"
-                className="rounded-none"
+                className="rounded-xl"
               />
             </div>
 
@@ -306,7 +316,7 @@ export default function UserManagement() {
                 value={newUser.role}
                 onValueChange={(value) => setNewUser({ ...newUser, role: value })}
               >
-                <SelectTrigger className="rounded-none">
+                <SelectTrigger className="rounded-xl">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -323,14 +333,14 @@ export default function UserManagement() {
             <Button
               variant="outline"
               onClick={() => setShowCreateDialog(false)}
-              className="rounded-none"
+              className="rounded-xl"
             >
               Cancel
             </Button>
             <Button
               onClick={handleCreateUser}
               disabled={creating}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-none"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl font-semibold shadow-lg shadow-primary/20"
             >
               {creating ? 'Creating...' : 'Create User'}
             </Button>

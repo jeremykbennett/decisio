@@ -234,7 +234,7 @@ export default function Settings() {
       <div className="max-w-4xl">
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-semibold tracking-tight mb-2">Dropdown Configuration</h2>
+            <h2 className="font-display text-2xl font-bold tracking-tight mb-2 text-foreground">Dropdown Configuration</h2>
             <p className="text-sm text-muted-foreground">
               Manage dropdown options for client fields. Changes will apply to all new client forms.
             </p>
@@ -242,7 +242,7 @@ export default function Settings() {
           <Button
             onClick={() => setShowNewFieldDialog(true)}
             data-testid="create-new-field"
-            className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-none"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl font-semibold shadow-lg shadow-primary/20"
           >
             <Plus className="h-4 w-4 mr-2" strokeWidth={1.5} />
             Create New Field
@@ -253,7 +253,7 @@ export default function Settings() {
           {configs.map((config) => (
             <div
               key={config.field_name}
-              className="bg-white border border-border rounded-none p-6"
+              className="glass-card rounded-2xl p-6"
               data-testid={`config-${config.field_name}`}
             >
               <div className="flex items-center justify-between mb-4">
@@ -263,14 +263,14 @@ export default function Settings() {
                       <Input
                         value={newLabel}
                         onChange={(e) => setNewLabel(e.target.value)}
-                        className="w-64 rounded-none border border-input"
+                        className="w-64 rounded-xl border border-input"
                         autoFocus
                       />
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleSaveLabel(config.field_name)}
-                        className="rounded-none"
+                        className="rounded-xl"
                       >
                         <Check className="h-4 w-4" strokeWidth={1.5} />
                       </Button>
@@ -278,7 +278,7 @@ export default function Settings() {
                         variant="ghost"
                         size="sm"
                         onClick={() => setEditingLabel(null)}
-                        className="rounded-none"
+                        className="rounded-xl"
                       >
                         <X className="h-4 w-4" strokeWidth={1.5} />
                       </Button>
@@ -296,7 +296,7 @@ export default function Settings() {
                           setNewLabel(config.display_label || config.field_name);
                         }}
                         data-testid={`edit-label-${config.field_name}`}
-                        className="rounded-none hover:bg-muted p-1"
+                        className="rounded-xl hover:bg-muted p-1"
                       >
                         <Edit2 className="h-3 w-3" strokeWidth={1.5} />
                       </Button>
@@ -306,7 +306,7 @@ export default function Settings() {
                           size="sm"
                           onClick={() => handleDeleteField(config.field_name)}
                           data-testid={`delete-field-${config.field_name}`}
-                          className="rounded-none hover:bg-destructive/10 hover:text-destructive p-1"
+                          className="rounded-xl hover:bg-destructive/10 hover:text-destructive p-1"
                         >
                           <Trash2 className="h-3 w-3" strokeWidth={1.5} />
                         </Button>
@@ -320,7 +320,7 @@ export default function Settings() {
                     size="sm"
                     onClick={() => handleViewHistory(config.field_name)}
                     data-testid={`view-history-${config.field_name}`}
-                    className="rounded-none hover:bg-muted"
+                    className="rounded-xl hover:bg-muted"
                   >
                     <History className="h-4 w-4 mr-2" strokeWidth={1.5} />
                     View History
@@ -330,7 +330,7 @@ export default function Settings() {
                     size="sm"
                     onClick={() => handleAddOption(config.field_name)}
                     data-testid={`add-option-${config.field_name}`}
-                    className="rounded-none hover:bg-muted"
+                    className="rounded-xl hover:bg-muted"
                   >
                     <Plus className="h-4 w-4 mr-2" strokeWidth={1.5} />
                     Add Option
@@ -346,7 +346,7 @@ export default function Settings() {
                       onChange={(e) => handleOptionChange(config.field_name, index, e.target.value)}
                       data-testid={`option-input-${config.field_name}-${index}`}
                       placeholder="Enter option value"
-                      className="rounded-none border border-input"
+                      className="rounded-xl border border-input"
                     />
                     {config.options.length > 1 && (
                       <Button
@@ -354,7 +354,7 @@ export default function Settings() {
                         size="sm"
                         onClick={() => handleRemoveOption(config.field_name, index)}
                         data-testid={`remove-option-${config.field_name}-${index}`}
-                        className="rounded-none hover:bg-destructive/10 hover:text-destructive"
+                        className="rounded-xl hover:bg-destructive/10 hover:text-destructive"
                       >
                         <X className="h-4 w-4" strokeWidth={1.5} />
                       </Button>
@@ -367,7 +367,7 @@ export default function Settings() {
                 onClick={() => handleSave(config.field_name)}
                 disabled={saving === config.field_name}
                 data-testid={`save-${config.field_name}`}
-                className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-none"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl font-semibold shadow-lg shadow-primary/20"
               >
                 <Save className="h-4 w-4 mr-2" strokeWidth={1.5} />
                 {saving === config.field_name ? 'Saving...' : 'Save Changes'}
@@ -378,7 +378,7 @@ export default function Settings() {
 
         {/* Audit History Dialog */}
         <Dialog open={showHistory} onOpenChange={setShowHistory}>
-          <DialogContent className="rounded-none max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogContent className="rounded-2xl max-w-2xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-xl font-semibold tracking-tight">
                 Change History: {configs.find(c => c.field_name === currentFieldName)?.display_label || currentFieldName}
@@ -402,7 +402,7 @@ export default function Settings() {
                   {auditLogs.map((log) => (
                     <div
                       key={log.id}
-                      className="border border-border rounded-none p-4 bg-muted/20"
+                      className="border border-border rounded-xl p-4 bg-muted/30"
                       data-testid={`audit-log-${log.id}`}
                     >
                       <div className="flex items-start justify-between mb-3">
@@ -414,7 +414,7 @@ export default function Settings() {
                             {formatDate(log.timestamp)}
                           </p>
                         </div>
-                        <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-none font-medium">
+                        <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full font-medium">
                           {log.action.replace('_', ' ').toUpperCase()}
                         </span>
                       </div>
@@ -430,7 +430,7 @@ export default function Settings() {
 
         {/* Create New Field Dialog */}
         <Dialog open={showNewFieldDialog} onOpenChange={setShowNewFieldDialog}>
-          <DialogContent className="rounded-none max-w-2xl">
+          <DialogContent className="rounded-2xl max-w-2xl">
             <DialogHeader>
               <DialogTitle className="text-xl font-semibold tracking-tight">
                 Create New Custom Field
@@ -451,7 +451,7 @@ export default function Settings() {
                   onChange={(e) => setNewField({ ...newField, field_name: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') })}
                   placeholder="e.g., region, department, tier"
                   data-testid="new-field-name"
-                  className="rounded-none border border-input"
+                  className="rounded-xl border border-input"
                 />
               </div>
 
@@ -465,7 +465,7 @@ export default function Settings() {
                   onChange={(e) => setNewField({ ...newField, display_label: e.target.value })}
                   placeholder="e.g., Region, Department, Service Tier"
                   data-testid="new-field-label"
-                  className="rounded-none border border-input"
+                  className="rounded-xl border border-input"
                 />
               </div>
 
@@ -485,7 +485,7 @@ export default function Settings() {
                         }}
                         placeholder="Enter option"
                         data-testid={`new-field-option-${index}`}
-                        className="rounded-none border border-input"
+                        className="rounded-xl border border-input"
                       />
                       {newField.options.length > 1 && (
                         <Button
@@ -495,7 +495,7 @@ export default function Settings() {
                             const newOptions = newField.options.filter((_, i) => i !== index);
                             setNewField({ ...newField, options: newOptions });
                           }}
-                          className="rounded-none hover:bg-destructive/10 hover:text-destructive"
+                          className="rounded-xl hover:bg-destructive/10 hover:text-destructive"
                         >
                           <X className="h-4 w-4" strokeWidth={1.5} />
                         </Button>
@@ -508,7 +508,7 @@ export default function Settings() {
                   size="sm"
                   onClick={() => setNewField({ ...newField, options: [...newField.options, ''] })}
                   data-testid="add-new-field-option"
-                  className="rounded-none border border-input"
+                  className="rounded-xl border border-input"
                 >
                   <Plus className="h-4 w-4 mr-2" strokeWidth={1.5} />
                   Add Option
@@ -523,14 +523,14 @@ export default function Settings() {
                   setShowNewFieldDialog(false);
                   setNewField({ field_name: '', display_label: '', options: [''] });
                 }}
-                className="rounded-none border border-input"
+                className="rounded-xl border border-input"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleCreateField}
                 data-testid="submit-new-field"
-                className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-none"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl font-semibold shadow-lg shadow-primary/20"
               >
                 Create Field
               </Button>
