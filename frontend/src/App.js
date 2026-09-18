@@ -5,6 +5,7 @@ import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
+import DashboardHome from './pages/DashboardHome';
 import ClientForm from './pages/ClientForm';
 import ClientDetail from './pages/ClientDetail';
 import Campaigns from './pages/Campaigns';
@@ -27,6 +28,14 @@ function App() {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route
             path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <DashboardHome />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/clients"
             element={
               <ProtectedRoute>
                 <Dashboard />

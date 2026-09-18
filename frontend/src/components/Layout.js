@@ -27,10 +27,18 @@ export const Layout = ({ children, pageTitle }) => {
       };
     }
 
+    if (location.pathname === '/dashboard') {
+      return {
+        title: 'Dashboard',
+        subtitle: 'Your workspace at a glance',
+        action: null
+      };
+    }
+
     return {
       title: 'Client Management',
       subtitle: 'Your clients and their decision records',
-      action: (user.role === 'administrator' || user.role === 'superuser') && location.pathname === '/dashboard' ? (
+      action: (user.role === 'administrator' || user.role === 'superuser') && location.pathname === '/clients' ? (
         <Button
           onClick={() => navigate('/clients/new')}
           data-testid="add-client-button"
@@ -79,14 +87,14 @@ export const Layout = ({ children, pageTitle }) => {
           <button
             onClick={() => navigate('/dashboard')}
             data-testid="nav-dashboard"
-            className={navItemClass(isActive('/dashboard') || (isActive('/clients') && !isActive('/campaigns')))}
+            className={navItemClass(location.pathname === '/dashboard')}
           >
             <LayoutDashboard className="h-5 w-5" strokeWidth={1.75} />
             Dashboard
           </button>
 
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/clients')}
             data-testid="nav-clients"
             className={navItemClass(isActive('/clients'))}
           >

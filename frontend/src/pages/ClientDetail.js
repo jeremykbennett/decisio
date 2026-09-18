@@ -117,7 +117,7 @@ export default function ClientDetail() {
       <Layout>
         <div className="text-center py-12">
           <p className="text-sm text-muted-foreground">Client not found</p>
-          <Button onClick={() => navigate('/dashboard')} className="mt-4 rounded-xl">Back to Dashboard</Button>
+          <Button onClick={() => navigate('/clients')} className="mt-4 rounded-xl">Back to Clients</Button>
         </div>
       </Layout>
     );
@@ -136,12 +136,12 @@ export default function ClientDetail() {
         <div className="flex items-center justify-between">
           <Button
             variant="ghost"
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/clients')}
             data-testid="back-button"
             className="rounded-xl hover:bg-muted -ml-3"
           >
             <ArrowLeft className="h-4 w-4 mr-2" strokeWidth={1.75} />
-            Back to Dashboard
+            Back to Clients
           </Button>
 
           {canManage && (

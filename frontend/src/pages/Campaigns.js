@@ -128,7 +128,7 @@ export default function Campaigns() {
               <p className="text-sm text-muted-foreground mt-1">Campaigns are created from a client's page.</p>
               {canManage && (
                 <Button
-                  onClick={() => navigate('/dashboard')}
+                  onClick={() => navigate('/clients')}
                   className="mt-5 bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-5 font-semibold shadow-lg shadow-primary/20"
                   data-testid="empty-state-add-button"
                 >

@@ -28,7 +28,7 @@ export default function Register() {
       localStorage.setItem('token', response.access_token);
       localStorage.setItem('user', JSON.stringify(response.user));
       toast.success('Registration successful');
-      navigate('/dashboard');
+      navigate('/clients');
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Registration failed');
     } finally {

@@ -129,7 +129,7 @@ export default function ClientForm() {
         });
         toast.success('Client created successfully');
       }
-      navigate('/dashboard');
+      navigate('/clients');
     } catch (error) {
       toast.error(error.response?.data?.detail || `Failed to ${isEdit ? 'update' : 'create'} client`);
     } finally {
@@ -151,12 +151,12 @@ export default function ClientForm() {
       <div className="max-w-4xl">
         <Button
           variant="ghost"
-          onClick={() => navigate('/dashboard')}
+          onClick={() => navigate('/clients')}
           data-testid="back-button"
           className="mb-6 rounded-xl hover:bg-muted -ml-3"
         >
           <ArrowLeft className="h-4 w-4 mr-2" strokeWidth={1.75} />
-          Back to Dashboard
+          Back to Clients
         </Button>
 
         <div className="glass-card rounded-2xl p-8 animate-rise">
@@ -458,7 +458,7 @@ export default function ClientForm() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate('/clients')}
                 data-testid="cancel-button"
                 className="rounded-xl border border-input"
               >
