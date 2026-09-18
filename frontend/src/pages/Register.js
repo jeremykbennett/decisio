@@ -41,7 +41,7 @@ export default function Register() {
       <div className="w-full max-w-md p-8 bg-white border border-border rounded-none shadow-sm">
         <div className="mb-8">
           <h1 className="text-4xl font-bold tracking-tight text-primary">Create Account</h1>
-          <p className="text-sm text-muted-foreground mt-2 uppercase tracking-wider">Join the Campaign Tracker</p>
+          <p className="text-sm text-muted-foreground mt-2 uppercase tracking-wider">Join Decisio</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">

@@ -77,7 +77,7 @@ export const Layout = ({ children, pageTitle }) => {
               <Target className="h-5 w-5 text-white" strokeWidth={1.75} />
             </div>
             <div>
-              <h1 className="font-display text-base font-bold tracking-tight text-white">Campaign Tracker</h1>
+              <h1 className="font-display text-base font-bold tracking-tight text-white">Decisio</h1>
               <p className="text-[10px] text-white/40 uppercase tracking-[0.2em]">Decision Mgmt</p>
             </div>
           </div>

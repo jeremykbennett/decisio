@@ -43,7 +43,7 @@ export default function Login() {
             <Target className="h-6 w-6 text-white" strokeWidth={1.75} />
           </div>
           <div>
-            <p className="font-display font-bold text-lg leading-tight">Campaign Tracker</p>
+            <p className="font-display font-bold text-lg leading-tight">Decisio</p>
             <p className="text-[11px] uppercase tracking-[0.2em] text-white/50">Decision Management</p>
           </div>
         </div>
@@ -73,7 +73,7 @@ export default function Login() {
           </div>
         </div>
 
-        <p className="relative z-10 text-xs text-white/40">© {new Date().getFullYear()} Campaign Tracker · Decision Management System</p>
+        <p className="relative z-10 text-xs text-white/40">© {new Date().getFullYear()} Decisio · Decision Management System</p>
       </div>
 
       {/* Form panel */}
@@ -84,7 +84,7 @@ export default function Login() {
               <Target className="h-6 w-6 text-white" strokeWidth={1.75} />
             </div>
             <div>
-              <p className="font-display font-bold text-lg text-foreground">Campaign Tracker</p>
+              <p className="font-display font-bold text-lg text-foreground">Decisio</p>
               <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Decision Management</p>
             </div>
           </div>
