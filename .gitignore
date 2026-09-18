@@ -21,3 +21,10 @@ dist/
 # Misc
 .DS_Store
 coverage/
+.env
+.env.*
+*.env
+credentials.json
+*.pem
+*.key
+.credentials
