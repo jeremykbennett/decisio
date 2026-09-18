@@ -106,6 +106,14 @@ function App() {
             }
           />
           <Route
+            path="/campaigns/:id/edit"
+            element={
+              <ProtectedRoute>
+                <CampaignForm />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/campaigns/:id"
             element={
               <ProtectedRoute>

@@ -159,21 +159,26 @@ export default function CampaignForm() {
           variant="ghost"
           onClick={() => navigate(clientId ? `/clients/${clientId}` : '/campaigns')}
           data-testid="back-button"
-          className="mb-6 rounded-none hover:bg-muted"
+          className="mb-6 rounded-xl hover:bg-muted -ml-3"
         >
-          <ArrowLeft className="h-4 w-4 mr-2" strokeWidth={1.5} />
+          <ArrowLeft className="h-4 w-4 mr-2" strokeWidth={1.75} />
           Back to {clientId ? 'Client' : 'Campaigns'}
         </Button>
 
-        <div className="bg-white border border-border rounded-none p-8">
-          <h2 className="text-2xl font-semibold tracking-tight mb-6">
+        <div className="glass-card rounded-2xl p-8 animate-rise">
+          <h2 className="font-display text-2xl font-bold tracking-tight mb-6 text-foreground">
             {isEdit ? 'Edit Campaign' : 'Create New Campaign'}
           </h2>
 
           {client && (
-            <div className="mb-6 p-4 bg-muted/30 border border-border rounded-none">
-              <Label className="text-xs uppercase tracking-wider font-medium text-muted-foreground">Client</Label>
-              <p className="text-lg font-medium mt-1">{client.client_name}</p>
+            <div className="mb-6 p-4 bg-primary/[0.04] border border-primary/15 rounded-xl flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-indigo-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                {(client.client_name || '?').slice(0, 2).toUpperCase()}
+              </div>
+              <div>
+                <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Client</Label>
+                <p className="text-base font-semibold text-foreground">{client.client_name}</p>
+              </div>
             </div>
           )}
 
@@ -189,7 +194,7 @@ export default function CampaignForm() {
                   onChange={(e) => setFormData({ ...formData, campaign_name: e.target.value })}
                   data-testid="campaign-name-input"
                   required
-                  className="rounded-none border border-input"
+                  className="rounded-xl h-11 bg-white border border-input"
                 />
               </div>
 
@@ -204,7 +209,7 @@ export default function CampaignForm() {
                   onChange={(e) => setFormData({ ...formData, election_start_date: e.target.value })}
                   data-testid="start-date-input"
                   required
-                  className="rounded-none border border-input"
+                  className="rounded-xl h-11 bg-white border border-input"
                 />
               </div>
 
@@ -219,7 +224,7 @@ export default function CampaignForm() {
                   onChange={(e) => setFormData({ ...formData, election_end_date: e.target.value })}
                   data-testid="end-date-input"
                   required
-                  className="rounded-none border border-input"
+                  className="rounded-xl h-11 bg-white border border-input"
                 />
               </div>
 
@@ -232,7 +237,7 @@ export default function CampaignForm() {
                   onValueChange={(value) => setFormData({ ...formData, channel: value })}
                   required
                 >
-                  <SelectTrigger data-testid="channel-select" className="rounded-none">
+                  <SelectTrigger data-testid="channel-select" className="rounded-xl h-11 bg-white">
                     <SelectValue placeholder="Select channel" />
                   </SelectTrigger>
                   <SelectContent>
@@ -254,7 +259,7 @@ export default function CampaignForm() {
                   onChange={(e) => setFormData({ ...formData, article_url: e.target.value })}
                   data-testid="article-url-input"
                   placeholder="https://..."
-                  className="rounded-none border border-input"
+                  className="rounded-xl h-11 bg-white border border-input"
                 />
               </div>
             </div>
@@ -278,7 +283,7 @@ export default function CampaignForm() {
                           custom_fields: { ...formData.custom_fields, [field.field_name]: value }
                         })}
                       >
-                        <SelectTrigger data-testid={`custom-${field.field_name}-select`} className="rounded-none">
+                        <SelectTrigger data-testid={`custom-${field.field_name}-select`} className="rounded-xl h-11 bg-white">
                           <SelectValue placeholder={`Select ${field.display_label.toLowerCase()}`} />
                         </SelectTrigger>
                         <SelectContent>
@@ -297,7 +302,7 @@ export default function CampaignForm() {
               <Label className="text-xs uppercase tracking-wider font-medium mb-3 block">
                 Marketing Contact(s) *
               </Label>
-              <div className="space-y-2 max-h-48 overflow-y-auto border border-border rounded-none p-4">
+              <div className="space-y-2 max-h-48 overflow-y-auto border border-border rounded-xl p-4 bg-white/60">
                 {users.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No users found</p>
                 ) : (
@@ -351,7 +356,7 @@ export default function CampaignForm() {
                 variant="outline"
                 onClick={() => navigate('/campaigns')}
                 data-testid="cancel-button"
-                className="rounded-none border border-input"
+                className="rounded-xl border border-input"
               >
                 Cancel
               </Button>
@@ -359,7 +364,7 @@ export default function CampaignForm() {
                 type="submit"
                 disabled={loading}
                 data-testid="submit-button"
-                className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-none px-6"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-6 font-semibold shadow-lg shadow-primary/20"
               >
                 {loading ? 'Saving...' : isEdit ? 'Update Campaign' : 'Create Campaign'}
               </Button>
