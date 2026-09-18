@@ -984,6 +984,10 @@ async def export_campaign_decisions(campaign_id: str, decision_type: str, curren
     if decision_type not in {"opt_in", "opt_out", "both"}:
         raise HTTPException(status_code=400, detail="Invalid export type")
 
+    # Only Campaign Managers and Admins/Superusers may export decision data
+    if not (is_admin_or_superuser(current_user) or is_campaign_manager(current_user)):
+        raise HTTPException(status_code=403, detail="You do not have permission to export campaign decisions")
+
     campaign = await db.campaigns.find_one({"id": campaign_id}, {"_id": 0})
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")

@@ -1,0 +1,24 @@
+{
+  "summary": "Validated (1) sidebar nav rename to 'Campaign Manager', (2) new xlsx export endpoint GET /api/campaigns/{id}/export/{opt_in|opt_out|both}, and (3) role display rename Marketer -> 'Campaign Manager' while underlying role key stays 'marketer'. Backend: 8/8 pytest tests pass in /app/backend/tests/test_export_and_role_labels.py — asserts xlsx MIME + Content-Disposition, exact header row (Client Name, Policy ID, Platform, Decision, Updated By, Updated At), correct decision filtering per file type, marketer 200, invalid type 400, unknown campaign 404, Global Winter Push row counts (1 opt-in Meridian Benefits, 1 opt-out Surest Insurance Group, both=2), and /api/users still returns role='marketer' for marketer@test.com. Frontend Playwright: marketer login shows nav-campaigns='Campaign Manager' and sidebar footer 'CAMPAIGN MANAGER'; /campaigns has export-campaign-<id> dropdown with export-optin-<id>, export-optout-<id>, export-both-<id> all visible; clicking downloads Global_Winter_Push_both.xlsx. Detail page (open a campaign) exposes export-optin-detail/export-optout-detail/export-both-detail and downloads Global_Winter_Push_opt_in.xlsx. Admin: same export dropdown works, downloaded Global_Winter_Push_opt_out.xlsx. User Management (/user-management) shows 'Campaign Manager' badge and description on the marketer row with zero 'Marketer' literal badges. Register page role select shows 'Campaign Manager'.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_export_and_role_labels.py",
+    "/app/test_reports/pytest/export_role.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py is now 1210 lines; the new export endpoint adds openpyxl work inline. Extract to routers/exports.py and stream via async generator if row counts grow (currently to_list(100000) buffers everything into memory).",
+    "Export endpoint has no role check — any authenticated user (including client_manager) can download all client decisions for any campaign. If Client Managers should not see other clients' data, add RBAC (is_admin_or_superuser or marketer with campaign assignment) similar to other campaign endpoints.",
+    "Export filename derivation strips characters but does not RFC-5987 encode; unicode campaign names will silently be stripped. Consider filename*=UTF-8''... in Content-Disposition.",
+    "sort_key uses e.get('updated_at') indirectly via client_name only; timestamps in xlsx are raw ISO strings — consider formatting as Excel datetime for better UX in Excel."
+  ],
+  "updated_files": ["/app/backend/tests/test_export_and_role_labels.py"],
+  "success_rate": {"backend": "100% (8/8)", "frontend": "100% (all flows)"},
+  "test_credentials": "super@test.com/newpass123, admin@test.com/admin123, marketer@test.com/marketer123 (per /app/memory/test_credentials.md)",
+  "seed_data_creation": "None. No data created or mutated by tests. Seed campaigns/clients/users preserved.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Export regression file: /app/backend/tests/test_export_and_role_labels.py (needs REACT_APP_BACKEND_URL env var when running via bare pytest). Frontend testids: export-campaign-<id> (dropdown trigger on /campaigns row), export-optin-<id>/export-optout-<id>/export-both-<id> (dropdown items), export-optin-detail/export-optout-detail/export-both-detail (campaign detail page). User Management route is /user-management (not /users). Sidebar nav label uses data-testid nav-campaigns with text 'Campaign Manager'. Underlying role key remains 'marketer' in the API response.",
+  "rca of the issue": "N/A — feature works as specified across marketer, admin, and superuser."
+}
