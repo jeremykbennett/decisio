@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import Layout from '../components/Layout';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { Search, Eye, Edit, Trash2, Users, CheckCircle2, PauseCircle, Layers } from 'lucide-react';
+import { Search, Eye, Edit, Trash2, Users, AlertCircle } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,6 +23,7 @@ const API = `${BACKEND_URL}/api`;
 
 export default function Dashboard() {
   const [clients, setClients] = useState([]);
+  const [summary, setSummary] = useState({ total_campaigns: 0, summaries: {} });
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [deleteId, setDeleteId] = useState(null);
@@ -35,6 +36,10 @@ export default function Dashboard() {
   useEffect(() => {
     fetchClients();
   }, [search, scope]);
+
+  useEffect(() => {
+    fetchSummary();
+  }, []);
 
   const fetchClients = async () => {
     try {
@@ -50,6 +55,25 @@ export default function Dashboard() {
     }
   };
 
+  const fetchSummary = async () => {
+    try {
+      const response = await axios.get(`${API}/clients/election-summary`, {
+        headers: getAuthHeaders()
+      });
+      setSummary(response.data);
+    } catch (error) {
+      console.error('Failed to fetch election summary');
+    }
+  };
+
+  const clientDecisions = (clientId) => {
+    const s = summary.summaries?.[clientId];
+    const opt_in = s?.opt_in || 0;
+    const opt_out = s?.opt_out || 0;
+    const pending = s ? s.pending : summary.total_campaigns;
+    return { opt_in, opt_out, pending };
+  };
+
   const handleDelete = async () => {
     try {
       await axios.delete(`${API}/clients/${deleteId}`, {
@@ -58,6 +82,7 @@ export default function Dashboard() {
       toast.success('Client deleted successfully');
       setDeleteId(null);
       fetchClients();
+      fetchSummary();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to delete client');
     }
@@ -73,15 +98,11 @@ export default function Dashboard() {
     return colors[status?.toLowerCase()] || 'bg-primary/10 text-primary ring-1 ring-primary/20';
   };
 
-  const activeCount = clients.filter((c) => ['active', 'opt in'].includes(c.client_status?.toLowerCase())).length;
-  const inactiveCount = clients.length - activeCount;
-  const platformCount = new Set(clients.map((c) => c.platform).filter(Boolean)).size;
+  const needsDecisionCount = clients.filter((c) => clientDecisions(c.id).pending > 0).length;
 
   const stats = [
     { label: 'Total Clients', value: clients.length, icon: Users, tint: 'bg-primary/10 text-primary' },
-    { label: 'Active', value: activeCount, icon: CheckCircle2, tint: 'bg-emerald-50 text-emerald-600' },
-    { label: 'Inactive', value: inactiveCount, icon: PauseCircle, tint: 'bg-slate-100 text-slate-500' },
-    { label: 'Platforms', value: platformCount, icon: Layers, tint: 'bg-indigo-50 text-indigo-600' },
+    { label: 'Needs Decision', value: needsDecisionCount, icon: AlertCircle, tint: 'bg-amber-50 text-amber-600' },
   ];
 
   const clientColor = (name) => {
@@ -94,7 +115,7 @@ export default function Dashboard() {
     <Layout>
       <div className="space-y-6">
         {/* Stat cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4" data-testid="dashboard-stats">
+        <div className="grid grid-cols-2 gap-4 max-w-xl" data-testid="dashboard-stats">
           {stats.map(({ label, value, icon: Icon, tint }, i) => (
             <div
               key={label}
@@ -173,6 +194,7 @@ export default function Dashboard() {
                     <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-6 py-4">Platform</th>
                     <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-6 py-4">Status</th>
                     <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-6 py-4">Account Type</th>
+                    <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-6 py-4">Campaign Decisions</th>
                     <th className="text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider px-6 py-4">Actions</th>
                   </tr>
                 </thead>
@@ -199,6 +221,27 @@ export default function Dashboard() {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-foreground">{client.account_type}</td>
+                      <td className="px-6 py-4" data-testid={`client-decisions-${client.id}`}>
+                        {(() => {
+                          const d = clientDecisions(client.id);
+                          return (
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200" data-testid={`opted-in-${client.id}`} title="Opted in">
+                                {d.opt_in} in
+                              </span>
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700 ring-1 ring-red-200" data-testid={`opted-out-${client.id}`} title="Opted out">
+                                {d.opt_out} out
+                              </span>
+                              {d.pending > 0 && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 ring-1 ring-amber-200" data-testid={`needs-decision-${client.id}`} title="Campaigns awaiting a decision">
+                                  <AlertCircle className="h-3 w-3" strokeWidth={2} />
+                                  {d.pending} pending
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-1">
                           <Button

@@ -594,6 +594,31 @@ async def list_clients(
     
     return clients
 
+@api_router.get("/clients/election-summary")
+async def clients_election_summary(current_user: User = Depends(get_current_user)):
+    """Per-client counts of opt-in / opt-out / pending across all (global) campaigns."""
+    if is_campaign_manager(current_user):
+        raise HTTPException(status_code=403, detail="Campaign Managers do not have access to clients")
+
+    total_campaigns = await db.campaigns.count_documents({})
+    elections = await db.elections.find({}, {"_id": 0, "client_id": 1, "decision": 1}).to_list(1000000)
+
+    summaries = {}
+    for e in elections:
+        cid = e.get("client_id")
+        if not cid:
+            continue
+        s = summaries.setdefault(cid, {"opt_in": 0, "opt_out": 0})
+        if e.get("decision") == "opt_in":
+            s["opt_in"] += 1
+        elif e.get("decision") == "opt_out":
+            s["opt_out"] += 1
+
+    for cid, s in summaries.items():
+        s["pending"] = max(total_campaigns - s["opt_in"] - s["opt_out"], 0)
+
+    return {"total_campaigns": total_campaigns, "summaries": summaries}
+
 @api_router.get("/clients/{client_id}", response_model=Client)
 async def get_client(client_id: str, current_user: User = Depends(get_current_user)):
     if is_campaign_manager(current_user):
