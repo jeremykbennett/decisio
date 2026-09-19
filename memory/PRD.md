@@ -53,3 +53,9 @@ marketer@test.com/marketer123
 ## Update (June 2026)
 - Renamed the client management page and left-nav item to "Client Manager".
 - Removed the "Status" and "Account Type" columns from the Client Manager table (getStatusColor helper dropped).
+
+## Update (June 2026) — layout standardization
+- Campaign Manager page now mirrors Client Manager structure: two stat cards (grid-cols-2 gap-4 max-w-xl), search bar in same position/width, identical table padding & typography.
+- Primary action "New Campaign" moved into the Layout page header (matches "Add Client"); header title renamed "Campaign Management" -> "Campaign Manager".
+- New backend endpoint GET /api/campaigns/election-summary (per-campaign opt_in/opt_out/pending + global totals), declared before /campaigns/{id}.
+- Clicking a campaign row selects it and recalculates the opt-in/opt-out stat cards; "Show all campaigns" clears selection.

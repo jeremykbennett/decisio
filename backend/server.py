@@ -966,6 +966,32 @@ async def list_campaigns(
     
     return campaigns
 
+@api_router.get("/campaigns/election-summary")
+async def campaigns_election_summary(current_user: User = Depends(get_current_user)):
+    """Per-campaign counts of opt-in / opt-out plus overall totals."""
+    total_clients = await db.clients.count_documents({})
+    elections = await db.elections.find({}, {"_id": 0, "campaign_id": 1, "decision": 1}).to_list(1000000)
+
+    summaries = {}
+    totals = {"opt_in": 0, "opt_out": 0}
+    for e in elections:
+        cid = e.get("campaign_id")
+        if not cid:
+            continue
+        s = summaries.setdefault(cid, {"opt_in": 0, "opt_out": 0})
+        if e.get("decision") == "opt_in":
+            s["opt_in"] += 1
+            totals["opt_in"] += 1
+        elif e.get("decision") == "opt_out":
+            s["opt_out"] += 1
+            totals["opt_out"] += 1
+
+    for s in summaries.values():
+        s["pending"] = max(total_clients - s["opt_in"] - s["opt_out"], 0)
+
+    return {"total_clients": total_clients, "totals": totals, "summaries": summaries}
+
+
 @api_router.get("/campaigns/{campaign_id}", response_model=Campaign)
 async def get_campaign(campaign_id: str, current_user: User = Depends(get_current_user)):
     campaign = await db.campaigns.find_one({"id": campaign_id}, {"_id": 0})

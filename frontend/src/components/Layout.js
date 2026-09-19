@@ -21,9 +21,18 @@ export const Layout = ({ children, pageTitle }) => {
 
     if (location.pathname.startsWith('/campaigns')) {
       return {
-        title: 'Campaign Management',
+        title: 'Campaign Manager',
         subtitle: 'Track and manage campaign decisions',
-        action: null
+        action: (user.role === 'administrator' || user.role === 'superuser') && location.pathname === '/campaigns' ? (
+          <Button
+            onClick={() => navigate('/campaigns/new')}
+            data-testid="new-campaign-button"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-5 py-2.5 text-sm font-semibold shadow-lg shadow-primary/20"
+          >
+            <Plus className="h-4 w-4 mr-2" strokeWidth={2} />
+            New Campaign
+          </Button>
+        ) : null
       };
     }
 

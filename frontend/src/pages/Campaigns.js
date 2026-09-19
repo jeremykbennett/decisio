@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import Layout from '../components/Layout';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { Search, Eye, Edit, Trash2, Calendar, Plus, Package, Download } from 'lucide-react';
+import { Search, Eye, Edit, Trash2, Calendar, Package, Download, ThumbsUp, ThumbsDown } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,6 +34,8 @@ export default function Campaigns() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [deleteId, setDeleteId] = useState(null);
+  const [summary, setSummary] = useState({ totals: { opt_in: 0, opt_out: 0 }, summaries: {} });
+  const [selectedId, setSelectedId] = useState(null);
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const canManage = user.role === 'administrator' || user.role === 'superuser';
@@ -43,6 +45,21 @@ export default function Campaigns() {
   useEffect(() => {
     fetchCampaigns();
   }, [search, scope]);
+
+  useEffect(() => {
+    fetchSummary();
+  }, []);
+
+  const fetchSummary = async () => {
+    try {
+      const response = await axios.get(`${API}/campaigns/election-summary`, {
+        headers: getAuthHeaders()
+      });
+      setSummary(response.data);
+    } catch (error) {
+      console.error('Failed to fetch campaign election summary');
+    }
+  };
 
   const fetchCampaigns = async () => {
     try {
@@ -62,8 +79,10 @@ export default function Campaigns() {
     try {
       await axios.delete(`${API}/campaigns/${deleteId}`, { headers: getAuthHeaders() });
       toast.success('Campaign deleted successfully');
+      if (selectedId === deleteId) setSelectedId(null);
       setDeleteId(null);
       fetchCampaigns();
+      fetchSummary();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to delete campaign');
     }
@@ -105,48 +124,78 @@ export default function Campaigns() {
     return 'bg-slate-100 text-slate-600 ring-1 ring-slate-200';
   };
 
+  const selectedCampaign = campaigns.find((c) => c.id === selectedId) || null;
+  const selectedCounts = selectedId ? (summary.summaries?.[selectedId] || { opt_in: 0, opt_out: 0 }) : null;
+  const shown = selectedCounts || summary.totals || { opt_in: 0, opt_out: 0 };
+
+  const stats = [
+    { label: selectedId ? 'Opt-Ins' : 'Total Opt-Ins', value: shown.opt_in || 0, icon: ThumbsUp, tint: 'bg-emerald-50 text-emerald-600' },
+    { label: selectedId ? 'Opt-Outs' : 'Total Opt-Outs', value: shown.opt_out || 0, icon: ThumbsDown, tint: 'bg-red-50 text-red-600' },
+  ];
+
   return (
     <Layout>
       <div className="space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="relative w-72 max-w-full">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
-              <Input
-                type="text"
-                placeholder="Search campaigns..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                data-testid="search-campaigns-input"
-                className="pl-10 h-11 rounded-xl bg-white border-border focus-visible:ring-2 focus-visible:ring-primary/30"
-              />
-            </div>
-
-            {isCampaignManager && (
-              <div className="inline-flex rounded-xl border border-border bg-white p-1" data-testid="campaign-scope-toggle">
-                {[['mine', 'My Campaigns'], ['all', 'All Campaigns']].map(([val, label]) => (
-                  <button
-                    key={val}
-                    onClick={() => setScope(val)}
-                    data-testid={`scope-${val}`}
-                    className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${scope === val ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'}`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {canManage && (
-            <Button
-              onClick={() => navigate('/campaigns/new')}
-              data-testid="new-campaign-button"
-              className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-5 font-semibold shadow-lg shadow-primary/20"
+        {/* Stat cards */}
+        <div className="grid grid-cols-2 gap-4 max-w-xl" data-testid="campaign-stats">
+          {stats.map(({ label, value, icon: Icon, tint }, i) => (
+            <div
+              key={label}
+              className="glass-card rounded-2xl p-5 flex items-center justify-between animate-rise"
+              style={{ animationDelay: `${i * 70}ms` }}
+              data-testid={`stat-${i === 0 ? 'opt-ins' : 'opt-outs'}`}
             >
-              <Plus className="h-4 w-4 mr-2" strokeWidth={2} />
-              New Campaign
-            </Button>
+              <div>
+                <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">{label}</p>
+                <p className="font-display text-3xl font-bold text-foreground mt-1 font-data">{value}</p>
+              </div>
+              <div className={`h-12 w-12 rounded-xl flex items-center justify-center ${tint}`}>
+                <Icon className="h-6 w-6" strokeWidth={1.75} />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {selectedCampaign && (
+          <div className="flex items-center gap-3 text-sm" data-testid="stats-scope-banner">
+            <span className="text-muted-foreground">Showing decisions for</span>
+            <span className="font-semibold text-foreground">{selectedCampaign.campaign_name}</span>
+            <button
+              onClick={() => setSelectedId(null)}
+              data-testid="clear-campaign-selection"
+              className="text-xs font-semibold text-primary hover:underline"
+            >
+              Show all campaigns
+            </button>
+          </div>
+        )}
+
+        {/* Search bar */}
+        <div className="flex items-center gap-4">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
+            <Input
+              type="text"
+              placeholder="Search campaigns..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              data-testid="search-campaigns-input"
+              className="pl-10 h-11 rounded-xl bg-white border-border focus-visible:ring-2 focus-visible:ring-primary/30"
+            />
+          </div>
+          {isCampaignManager && (
+            <div className="inline-flex rounded-xl border border-border bg-white p-1" data-testid="campaign-scope-toggle">
+              {[['mine', 'My Campaigns'], ['all', 'All Campaigns']].map(([val, label]) => (
+                <button
+                  key={val}
+                  onClick={() => setScope(val)}
+                  data-testid={`scope-${val}`}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${scope === val ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           )}
         </div>
 
@@ -190,7 +239,8 @@ export default function Campaigns() {
                   {campaigns.map((campaign) => (
                     <tr
                       key={campaign.id}
-                      className="border-b border-border/60 last:border-0 hover:bg-primary/[0.03] transition-colors"
+                      onClick={() => setSelectedId(selectedId === campaign.id ? null : campaign.id)}
+                      className={`border-b border-border/60 last:border-0 cursor-pointer transition-colors ${selectedId === campaign.id ? 'bg-primary/[0.06]' : 'hover:bg-primary/[0.03]'}`}
                       data-testid={`campaign-row-${campaign.id}`}
                     >
                       <td className="px-6 py-4 text-sm font-semibold text-foreground">{campaign.campaign_name}</td>
@@ -211,7 +261,7 @@ export default function Campaigns() {
                           {campaign.campaign_products?.length || 0} product{(campaign.campaign_products?.length || 0) === 1 ? '' : 's'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
