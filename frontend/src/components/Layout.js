@@ -36,7 +36,7 @@ export const Layout = ({ children, pageTitle }) => {
     }
 
     return {
-      title: 'Client Management',
+      title: 'Client Manager',
       subtitle: 'Your clients and their decision records',
       action: (user.role === 'administrator' || user.role === 'superuser') && location.pathname === '/clients' ? (
         <Button
@@ -107,7 +107,7 @@ export const Layout = ({ children, pageTitle }) => {
               className={navItemClass(isActive('/clients'))}
             >
               <Users className="h-5 w-5" strokeWidth={1.75} />
-              Clients
+              Client Manager
             </button>
           )}
 

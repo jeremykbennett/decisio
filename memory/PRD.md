@@ -49,3 +49,7 @@ marketer@test.com/marketer123
 - P1: Reporting/rollup dashboard of election decisions across campaigns.
 - P2: Split server.py into routers; a11y on 3-way election control; election index.
 - P2: Real dashboard analytics; dark mode; resend invite.
+
+## Update (June 2026)
+- Renamed the client management page and left-nav item to "Client Manager".
+- Removed the "Status" and "Account Type" columns from the Client Manager table (getStatusColor helper dropped).

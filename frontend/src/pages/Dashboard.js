@@ -88,16 +88,6 @@ export default function Dashboard() {
     }
   };
 
-  const getStatusColor = (status) => {
-    const colors = {
-      active: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200',
-      inactive: 'bg-slate-100 text-slate-600 ring-1 ring-slate-200',
-      'opt in': 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200',
-      'opt out': 'bg-red-50 text-red-700 ring-1 ring-red-200'
-    };
-    return colors[status?.toLowerCase()] || 'bg-primary/10 text-primary ring-1 ring-primary/20';
-  };
-
   const needsDecisionCount = clients.filter((c) => clientDecisions(c.id).pending > 0).length;
 
   const stats = [
@@ -192,8 +182,6 @@ export default function Dashboard() {
                     <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-6 py-4">Policy ID</th>
                     <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-6 py-4">Client Name</th>
                     <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-6 py-4">Platform</th>
-                    <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-6 py-4">Status</th>
-                    <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-6 py-4">Account Type</th>
                     <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-6 py-4">Campaign Decisions</th>
                     <th className="text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider px-6 py-4">Actions</th>
                   </tr>
@@ -215,12 +203,6 @@ export default function Dashboard() {
                         </div>
                       </td>
                       <td className="px-6 py-4 text-sm text-foreground">{client.platform}</td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(client.client_status)}`}>
-                          {client.client_status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-foreground">{client.account_type}</td>
                       <td className="px-6 py-4" data-testid={`client-decisions-${client.id}`}>
                         {(() => {
                           const d = clientDecisions(client.id);
