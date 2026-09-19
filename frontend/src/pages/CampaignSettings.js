@@ -15,6 +15,16 @@ import {
   DialogTitle,
   DialogFooter,
 } from '../components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../components/ui/alert-dialog';
 
 const BACKEND_URL = (typeof window !== 'undefined' && window.location && window.location.origin) ? window.location.origin : process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -34,6 +44,7 @@ export default function CampaignSettings() {
   const [newLabel, setNewLabel] = useState('');
   const [showNewFieldDialog, setShowNewFieldDialog] = useState(false);
   const [newField, setNewField] = useState({ field_name: '', display_label: '', options: [''] });
+  const [deleteField, setDeleteField] = useState(null);
 
   useEffect(() => {
     fetchConfigs();
@@ -132,16 +143,16 @@ export default function CampaignSettings() {
     }
   };
 
-  const handleDeleteField = async (fieldName) => {
-    if (!window.confirm('Are you sure you want to delete this custom campaign field?')) {
-      return;
-    }
+  const handleDeleteField = async () => {
+    const fieldName = deleteField?.field_name;
+    if (!fieldName) return;
 
     try {
       await axios.delete(`${API}/dropdown-configs/${fieldName}`, {
         headers: getAuthHeaders()
       });
-      toast.success('Custom campaign field deleted successfully');
+      toast.success('Field deleted successfully');
+      setDeleteField(null);
       fetchConfigs();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to delete field');
@@ -313,17 +324,16 @@ export default function CampaignSettings() {
                       >
                         <Edit2 className="h-3 w-3" strokeWidth={1.5} />
                       </Button>
-                      {config.is_custom && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteField(config.field_name)}
-                          data-testid={`delete-field-${config.field_name}`}
-                          className="rounded-xl hover:bg-destructive/10 hover:text-destructive p-1"
-                        >
-                          <Trash2 className="h-3 w-3" strokeWidth={1.5} />
-                        </Button>
-                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setDeleteField(config)}
+                        data-testid={`delete-field-${config.field_name}`}
+                        title="Remove Field"
+                        className="rounded-xl hover:bg-destructive/10 hover:text-destructive p-1"
+                      >
+                        <Trash2 className="h-3 w-3" strokeWidth={1.5} />
+                      </Button>
                     </>
                   )}
                 </div>
@@ -553,6 +563,30 @@ export default function CampaignSettings() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Remove Field confirmation */}
+        <AlertDialog open={!!deleteField} onOpenChange={(open) => !open && setDeleteField(null)}>
+          <AlertDialogContent className="rounded-2xl" data-testid="delete-field-dialog">
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                Remove {deleteField?.display_label || deleteField?.field_name}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this field? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="rounded-xl" data-testid="cancel-delete-field">Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteField}
+                data-testid="confirm-delete-field"
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl"
+              >
+                Delete Field
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </Layout>
   );

@@ -80,7 +80,7 @@ export default function ClientForm() {
           custom.push(config);
         }
       });
-      setDropdownOptions(options);
+      setDropdownOptions(prev => ({ ...prev, ...options }));
       setCustomFields(custom);
     } catch (error) {
       console.error('Failed to fetch dropdown options');

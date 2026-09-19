@@ -754,7 +754,7 @@ async def startup_event():
 
 @api_router.get("/dropdown-configs")
 async def get_dropdown_configs(current_user: User = Depends(get_current_user)):
-    configs = await db.dropdown_configs.find({}, {"_id": 0}).to_list(100)
+    configs = await db.dropdown_configs.find({"hidden": {"$ne": True}}, {"_id": 0}).to_list(100)
     for config in configs:
         if isinstance(config.get("updated_at"), str):
             config["updated_at"] = datetime.fromisoformat(config["updated_at"])
@@ -905,12 +905,28 @@ async def delete_custom_field(
     if not config:
         raise HTTPException(status_code=404, detail="Field not found")
     
-    if not config.get("is_custom", False):
-        raise HTTPException(status_code=400, detail="Cannot delete built-in fields")
-    
-    await db.dropdown_configs.delete_one({"field_name": field_name})
-    
-    return {"message": "Custom field deleted successfully"}
+    if config.get("is_custom", False):
+        await db.dropdown_configs.delete_one({"field_name": field_name})
+    else:
+        # Built-in fields are hidden instead of deleted so client/campaign data stays intact
+        await db.dropdown_configs.update_one(
+            {"field_name": field_name},
+            {"$set": {"hidden": True, "updated_at": datetime.now(timezone.utc).isoformat()}}
+        )
+
+    audit_log = AuditLog(
+        action="field_deleted",
+        user_id=current_user.id,
+        user_name=current_user.full_name,
+        field_name=field_name,
+        old_values=config.get("options", []),
+        new_values=[]
+    )
+    audit_doc = audit_log.model_dump()
+    audit_doc["timestamp"] = audit_doc["timestamp"].isoformat()
+    await db.audit_logs.insert_one(audit_doc)
+
+    return {"message": "Field deleted successfully"}
 
 # Campaign endpoints
 @api_router.post("/campaigns", response_model=Campaign)

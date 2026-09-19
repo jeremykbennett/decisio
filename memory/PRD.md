@@ -59,3 +59,10 @@ marketer@test.com/marketer123
 - Primary action "New Campaign" moved into the Layout page header (matches "Add Client"); header title renamed "Campaign Management" -> "Campaign Manager".
 - New backend endpoint GET /api/campaigns/election-summary (per-campaign opt_in/opt_out/pending + global totals), declared before /campaigns/{id}.
 - Clicking a campaign row selects it and recalculates the opt-in/opt-out stat cards; "Show all campaigns" clears selection.
+
+## Update (June 2026) — settings field management
+- /settings is now a standalone "Client Settings" page (Layout pageTitle="Client Settings", heading "Client Field Configuration"); it lists client fields only (campaign_* filtered out).
+- Remove Field (trash) icon now shown next to EVERY config field on both Client Settings and Campaign Settings.
+- Deletion goes through an AlertDialog: "Are you sure you want to delete this field? This action cannot be undone." (window.confirm removed).
+- Backend DELETE /api/dropdown-configs/{field}: custom fields hard-deleted, built-in fields soft-hidden (hidden:true); GET /dropdown-configs filters hidden:true. Audit log entry "field_deleted" written.
+- ClientForm merges fetched options into defaults so a hidden built-in field cannot crash the form.
